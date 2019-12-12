@@ -101,8 +101,8 @@ def build_mad_instance_with_dummy_bb(sequences_file_name, bb_df,
 sequences_file_name = 'mad/lhc_without_bb.seq'
 mad = build_mad_instance_with_dummy_bb(sequences_file_name, bb_df)
 
+# Check 
 data_dict = {}
-
 for beam in ['b1', 'b2']:
     mad.use('lhc'+beam)
     mad.twiss()
@@ -111,5 +111,46 @@ for beam in ['b1', 'b2']:
 for beam in ['b1', 'b2']:
     twissbeam = data_dict['twissDF_'+beam]
     data_dict['twissDFBB_'+beam]=twissbeam[twissbeam['keyword']=='beambeam']
+
+# Go to Gianni's stuff
+from tools import MadPoint, get_bb_names_madpoints_sigmas, shift_strong_beam_based_on_close_ip, find_bb_separations
+
+ip_names = ['IP1', 'IP2', 'IP5', 'IP8'] 
+# Get IP locations from the survey
+mad.use("lhcb1")
+mad.twiss()
+mad.survey()
+IP_xyz_b1 = {}
+for ip in ip_names:
+    IP_xyz_b1[ip] = MadPoint.from_survey((ip + ":1").lower(), mad)
+
+mad.use("lhcb2")
+mad.twiss()
+mad.survey()
+IP_xyz_b2 = {}
+for ip in ip_names:
+    IP_xyz_b2[ip] = MadPoint.from_survey((ip + ":1").lower(), mad)
+
+# Get locations of the bb encounters (absolute from survey), closed orbit
+# and orientation of the local reference system (MadPoint objects)
+bb_names_b1, bb_xyz_b1, bb_sigmas_b1 = get_bb_names_madpoints_sigmas(
+    mad, seq_name="lhcb1"
+)
+bb_names_b2, bb_xyz_b2, bb_sigmas_b2 = get_bb_names_madpoints_sigmas(
+    mad, seq_name="lhcb2"
+)
+
+shift_strong_beam_based_on_close_ip(
+    points_weak=bb_xyz_b1,
+    points_strong=bb_xyz_b2,
+    IPs_survey_weak=IP_xyz_b1,
+    IPs_survey_strong=IP_xyz_b2,
+)
+
+sep_x, sep_y = find_bb_separations(
+    points_weak=bb_xyz_b1,
+    points_strong=bb_xyz_b2,
+    names=bb_names_b1,
+    )
     
 
