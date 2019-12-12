@@ -1,107 +1,8 @@
 import numpy as np
-import pysixtrack
+from madpoint import MadPoint
 
 _sigma_names = [11, 12, 13, 14, 22, 23, 24, 33, 34, 44]
 _beta_names = ["betx", "bety"]
-
-
-class MadPoint(object):
-    @classmethod
-    def from_survey(cls, name, mad):
-        return cls(name, mad, use_twiss=False, use_survey=True)
-
-    @classmethod
-    def from_twiss(cls, name, mad):
-        return cls(name, mad, use_twiss=True, use_survey=False)
-
-    def __init__(self, name, mad, use_twiss=True, use_survey=True):
-
-        self.use_twiss = use_twiss
-        self.use_survey = use_survey
-
-        if not (use_survey) and not (use_twiss):
-            raise ValueError(
-                "use_survey and use_twiss cannot be False at the same time"
-            )
-
-        self.name = name
-        if use_twiss:
-            twiss = mad.table.twiss
-            names = twiss.name
-        if use_survey:
-            survey = mad.table.survey
-            names = survey.name
-
-        idx = np.where(names == name)[0][0]
-
-        if use_twiss:
-            self.tx = twiss.x[idx]
-            self.ty = twiss.y[idx]
-            self.tpx = twiss.px[idx]
-            self.tpy = twiss.py[idx]
-        else:
-            self.tx = None
-            self.ty = None
-            self.tpx = None
-            self.tpy = None
-
-        if use_survey:
-            self.sx = survey.x[idx]
-            self.sy = survey.y[idx]
-            self.sz = survey.z[idx]
-            self.sp = np.array([self.sx, self.sy, self.sz])
-            theta = survey.theta[idx]
-            phi = survey.phi[idx]
-            psi = survey.psi[idx]
-        else:
-            self.sx = None
-            self.sy = None
-            self.sz = None
-            self.sp = None
-            theta = 0.0
-            phi = 0.0
-            psi = 0.0
-
-        thetam = np.array(
-            [
-                [np.cos(theta), 0, np.sin(theta)],
-                [0, 1, 0],
-                [-np.sin(theta), 0, np.cos(theta)],
-            ]
-        )
-        phim = np.array(
-            [
-                [1, 0, 0],
-                [0, np.cos(phi), np.sin(phi)],
-                [0, -np.sin(phi), np.cos(phi)],
-            ]
-        )
-        psim = np.array(
-            [
-                [np.cos(psi), -np.sin(psi), 0],
-                [np.sin(psi), np.cos(psi), 0],
-                [0, 0, 1],
-            ]
-        )
-        wm = np.dot(thetam, np.dot(phim, psim))
-        self.ex = np.dot(wm, np.array([1, 0, 0]))
-        self.ey = np.dot(wm, np.array([0, 1, 0]))
-        self.ez = np.dot(wm, np.array([0, 0, 1]))
-
-        self.p = np.array([0.0, 0.0, 0.0])
-
-        if use_twiss:
-            self.p += self.ex * self.tx + self.ey * self.ty
-
-        if use_survey:
-            self.p += self.sp
-
-    def dist(self, other):
-        return np.sqrt(np.sum((self.p - other.p) ** 2))
-
-    def distxy(self, other):
-        dd = self.p - other.p
-        return np.dot(dd, self.ex), np.dot(dd, self.ey)
 
 
 def norm(v):
@@ -233,10 +134,10 @@ def get_bb_names_madpoints_sigmas(
     return element_names, points, sigmas
 
 
-def shift_strong_beam_based_on_close_ip(
+def compute_shift_strong_beam_based_on_close_ip(
     points_weak, points_strong, IPs_survey_weak, IPs_survey_strong
 ):
-
+    strong_shift = []
     for i_bb, _ in enumerate(points_weak):
 
         pbw = points_weak[i_bb]
@@ -253,10 +154,11 @@ def shift_strong_beam_based_on_close_ip(
 
         # Shift Bs
         shift_ws = IPs_survey_strong[use_ip].p - IPs_survey_weak[use_ip].p
-        pbs.p -= shift_ws
+        strong_shift.append(shift_ws)
+    return strong_shift
 
 
-def find_bb_separations(points_weak, points_strong, names=None):
+def find_bb_separations(points_weak, points_strong, strong_shift, names=None):
 
     if names is None:
         names = ["bb_%d" % ii for ii in range(len(points_weak))]
@@ -269,7 +171,9 @@ def find_bb_separations(points_weak, points_strong, names=None):
         pbs = points_strong[i_bb]
 
         # Find vws
-        vbb_ws = points_strong[i_bb].p - points_weak[i_bb].p
+        vbb_ws = (points_strong[i_bb].p - strong_shift[i_bb]) - points_weak[
+            i_bb
+        ].p
 
         # Check that the two reference system are parallel
         try:
@@ -309,6 +213,7 @@ def setup_beam_beam_in_line(
     bb_sigmas_strong,
     bb_points_weak,
     bb_points_strong,
+    bb_shift_strong,
     beta_r_strong,
     bunch_intensity_strong,
     n_slices_6D,
@@ -318,6 +223,7 @@ def setup_beam_beam_in_line(
     sep_x, sep_y = find_bb_separations(
         points_weak=bb_points_weak,
         points_strong=bb_points_strong,
+        strong_shift=bb_shift_strong,
         names=bb_names,
     )
 

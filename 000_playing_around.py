@@ -8,19 +8,19 @@ def BB_FULL(
     circumference=27000,
     harmonic_number = 35640,
     bunch_spacing_buckets = 10,
-    numberOfLRPerIRSide=21, 
+    numberOfLRPerIRSide=21,
     numberOfHOSlices = 11,
-    sigt=0.0755, 
-    ip_names = ['IP1', 'IP2', 'IP5', 'IP8']
+    sigt=0.0755,
+    ip_names = ['IP1', 'IP2', 'IP5', 'IP8'],
+    beam_name = 'b1'
     ):
 
 
     # Long-Range
     myBBLRlist=[]
-    for beam in ['b1', 'b2']:
-        for ip_nn in ip_names:
-            for identifier in (list(range(-numberOfLRPerIRSide,0))+list(range(1,numberOfLRPerIRSide+1))):
-                myBBLRlist.append({'label':'bb_lr', 'ip_name':ip_nn, 'beam':beam, 'identifier':identifier})
+    for ip_nn in ip_names:
+        for identifier in (list(range(-numberOfLRPerIRSide,0))+list(range(1,numberOfLRPerIRSide+1))):
+            myBBLRlist.append({'label':'bb_lr', 'ip_name':ip_nn, 'beam':beam_name, 'identifier':identifier})
 
     myBBLR=pd.DataFrame(myBBLRlist)[['beam','ip_name','label','identifier']]
     myBBLR['elementClass']='beambeam'
@@ -46,10 +46,10 @@ def BB_FULL(
     sigzLumi=sigt/2
     z_centroids, z_cuts, N_part_per_slice = tp.constant_charge_slicing_gaussian(1,sigzLumi,numberOfHOSlices)
     myBBHOlist=[]
-    for beam in ['b1', 'b2']:
-        for ip_nn in ip_names:
-            for identifier in (list(range(-numberOfSliceOnSide,0))+[0]+list(range(1,numberOfSliceOnSide+1))):
-                myBBHOlist.append({'label':'bb_ho', 'ip_name':ip_nn, 'beam':beam, 'identifier':identifier})
+
+    for ip_nn in ip_names:
+        for identifier in (list(range(-numberOfSliceOnSide,0))+[0]+list(range(1,numberOfSliceOnSide+1))):
+            myBBHOlist.append({'label':'bb_ho', 'ip_name':ip_nn, 'beam':beam_name, 'identifier':identifier})
 
     myBBHO=pd.DataFrame(myBBHOlist)[['beam','ip_name','label','identifier']]
     myBBHO['elementClass']='beambeam'
@@ -61,7 +61,7 @@ def BB_FULL(
 
     myBBHO['charge [ppb]']=0 
     for ip_nn in ip_names:
-        myBBHO.loc[myBBHO['ip_name']==ip_nn, 'atPosition']=list(z_centroids)*2
+        myBBHO.loc[myBBHO['ip_name']==ip_nn, 'atPosition']=list(z_centroids)
 
     myBBHO['elementName']=myBBHO.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('IP', ''), x.beam, x.identifier), axis=1)
     myBBHO['elementDefinition']=myBBHO.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['charge [ppb]']*0) ), axis=1)
@@ -71,11 +71,14 @@ def BB_FULL(
     myBB=pd.concat([myBBHO, myBBLR],sort=False)
     return myBB
 
-bb_df = BB_FULL()
+bb_df_b1 = BB_FULL(beam_name = 'b1').set_index('elementName', verify_integrity=True).sort_index()
+bb_df_b2 = BB_FULL(beam_name = 'b2').set_index('elementName', verify_integrity=True).sort_index()
+
 
 # -------------------------------------------------------------------------------------
 
 def build_mad_instance_with_dummy_bb(sequences_file_name, bb_df,
+    beam_names=['b1', 'b2'],
     mad_echo=False, mad_warn=False, mad_info=False):
 
     mad = Madx()
@@ -87,19 +90,20 @@ def build_mad_instance_with_dummy_bb(sequences_file_name, bb_df,
     mad.input(bb_df['elementDefinition'].str.cat(sep='\n'))
 
     # %% seqedit
-    for beam in ['b1', 'b2']:
+    for beam in beam_names:
         myBBDFFiltered=bb_df[bb_df['beam']==beam]
         mad.input(f'seqedit, sequence={"lhc"+beam};')
         mad.input('flatten;')
         mad.input(myBBDFFiltered['elementInstallation'].str.cat(sep='\n'))
         mad.input('flatten;')
         mad.input(f'endedit;')
-        
+
     return mad
-    
+
 
 sequences_file_name = 'mad/lhc_without_bb.seq'
-mad = build_mad_instance_with_dummy_bb(sequences_file_name, bb_df)
+mad = build_mad_instance_with_dummy_bb(sequences_file_name,
+    bb_df=pd.concat([bb_df_b1, bb_df_b2]))
 
 # Check 
 data_dict = {}
@@ -107,15 +111,55 @@ for beam in ['b1', 'b2']:
     mad.use('lhc'+beam)
     mad.twiss()
     data_dict['twissDF_'+beam]=mad.table.twiss.dframe()
-    
+
 for beam in ['b1', 'b2']:
     twissbeam = data_dict['twissDF_'+beam]
     data_dict['twissDFBB_'+beam]=twissbeam[twissbeam['keyword']=='beambeam']
 
 # Go to Gianni's stuff
-from tools import MadPoint, get_bb_names_madpoints_sigmas, shift_strong_beam_based_on_close_ip, find_bb_separations
+from tools import MadPoint, get_bb_names_madpoints_sigmas, compute_shift_strong_beam_based_on_close_ip, find_bb_separations
 
-ip_names = ['IP1', 'IP2', 'IP5', 'IP8'] 
+
+for beam, bbdf in zip(['b1', 'b2'], [bb_df_b1, bb_df_b2]):
+    # Get locations of the bb encounters (absolute from survey), closed orbit
+    # and orientation of the local reference system (MadPoint objects)
+    names, positions, sigmas = get_bb_names_madpoints_sigmas(
+        mad, seq_name="lhc"+beam
+    )
+
+    temp_df = pd.DataFrame()
+    temp_df['self_lab_position'] = positions
+    temp_df['elementName'] = names
+    temp_df['self_Sigmas'] = [{kk: sigmas[kk][ibb] for kk in sigmas.keys()} for ibb in range(len(names))]
+
+    temp_df = temp_df.set_index('elementName', verify_integrity=True).sort_index()
+
+    for cc in temp_df.columns:
+        bbdf[cc] = temp_df[cc]
+
+
+
+dict_dfs = {'b1': bb_df_b1, 'b2': bb_df_b2}
+
+for self_nn, other_nn in zip(['b1', 'b2'], ['b2', 'b1']):
+
+    self_df = dict_dfs[self_nn]
+    other_df = dict_dfs[other_nn]
+
+    self_df['other_lab_positions'] = np.nan
+    self_df['other_Sigmas'] = np.nan
+
+    for ee in self_df.index:
+        # Assumption 'b1', 'b2' are in the element names
+        other_ee = ee.replace(self_nn, other_nn)
+        self_df.loc[self_nn, 'other_lab_positions'] = other_df[other_ee, 'self_lab_position']
+        self_df.loc[self_nn, 'other_Sigmas'] = other_df[other_ee, 'self_Sigmas']
+
+
+prrrr
+
+ip_names = ['IP1', 'IP2', 'IP5', 'IP8']
+
 # Get IP locations from the survey
 mad.use("lhcb1")
 mad.twiss()
@@ -123,7 +167,6 @@ mad.survey()
 IP_xyz_b1 = {}
 for ip in ip_names:
     IP_xyz_b1[ip] = MadPoint.from_survey((ip + ":1").lower(), mad)
-
 mad.use("lhcb2")
 mad.twiss()
 mad.survey()
@@ -131,14 +174,6 @@ IP_xyz_b2 = {}
 for ip in ip_names:
     IP_xyz_b2[ip] = MadPoint.from_survey((ip + ":1").lower(), mad)
 
-# Get locations of the bb encounters (absolute from survey), closed orbit
-# and orientation of the local reference system (MadPoint objects)
-bb_names_b1, bb_xyz_b1, bb_sigmas_b1 = get_bb_names_madpoints_sigmas(
-    mad, seq_name="lhcb1"
-)
-bb_names_b2, bb_xyz_b2, bb_sigmas_b2 = get_bb_names_madpoints_sigmas(
-    mad, seq_name="lhcb2"
-)
 
 shift_strong_beam_based_on_close_ip(
     points_weak=bb_xyz_b1,
