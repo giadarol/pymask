@@ -11,7 +11,7 @@ def BB_FULL(
     numberOfLRPerIRSide=21,
     numberOfHOSlices = 11,
     sigt=0.0755,
-    ip_names = ['IP1', 'IP2', 'IP5', 'IP8'],
+    ip_names = ['ip1', 'ip2', 'ip5', 'ip8'],
     beam_name = 'b1',
     other_beam_name = 'b2'
     ):
@@ -27,9 +27,9 @@ def BB_FULL(
     myBBLR=pd.DataFrame(myBBLRlist)[['beam','other_beam','ip_name','label','identifier']]
     myBBLR['elementClass']='beambeam'
     myBBLR['charge [ppb]']=0.
-    myBBLR['elementName']=myBBLR.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('IP', ''), x.beam, x.identifier), axis=1)
+    myBBLR['elementName']=myBBLR.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
     myBBLR['other_elementName']=myBBLR.apply(
-            lambda x: tp.elementName(x.label, x.ip_name.replace('IP', ''), x.other_beam, x.identifier), axis=1)
+            lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
     myBBLR['elementClass']='beambeam'
     myBBLR['elementAttributes']=lambda charge:'sigx = 0.1, '   + \
                 'sigy = 0.1, '   + \
@@ -67,8 +67,8 @@ def BB_FULL(
     for ip_nn in ip_names:
         myBBHO.loc[myBBHO['ip_name']==ip_nn, 'atPosition']=list(z_centroids)
 
-    myBBHO['elementName']=myBBHO.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('IP', ''), x.beam, x.identifier), axis=1)
-    myBBHO['other_elementName']=myBBHO.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('IP', ''), x.other_beam, x.identifier), axis=1)
+    myBBHO['elementName']=myBBHO.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
+    myBBHO['other_elementName']=myBBHO.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
     myBBHO['elementDefinition']=myBBHO.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['charge [ppb]']*0) ), axis=1)
     # assuming a sequence rotated in IR3
     myBBHO['elementInstallation']=myBBHO.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
@@ -147,48 +147,54 @@ for beam, bbdf in zip(['b1', 'b2'], [bb_df_b1, bb_df_b2]):
     # DEBUG
     temp_dict[beam] = {'sigmas':sigmas, 'positions':positions, 'names':names}
 
-# Find partner position and sigmas
+
+# Get ip position in the two surveys
+ip_names = ['ip1', 'ip2', 'ip5', 'ip8']
+
+ip_position_df = pd.DataFrame()
+
+for beam in ['b1', 'b2']:
+    mad.use("lhc"+beam)
+    mad.survey()
+    for ipnn in ip_names:
+        ip_position_df.loc[ipnn, beam] = MadPoint.from_survey((ipnn + ":1").lower(), mad)
+
+
+# Find partner position and sigmas and correct based on ip
 dict_dfs = {'b1': bb_df_b1, 'b2': bb_df_b2}
 
-for self_nn, other_nn in zip(['b1', 'b2'], ['b2', 'b1']):
+for self_beam_nn in ['b1', 'b2']:
 
-    self_df = dict_dfs[self_nn]
-    other_df = dict_dfs[other_nn]
+    self_df = dict_dfs[self_beam_nn]
 
     for ee in self_df.index:
+        other_beam_nn = self_df.loc[ee, 'other_beam']
+        other_df = dict_dfs[other_beam_nn]
         other_ee = self_df.loc[ee, 'other_elementName']
-        self_df.loc[ee, 'other_lab_position'] = other_df.loc[other_ee, 'self_lab_position']
+
+        # Get position of the other beam in its own survey
+        other_lab_position = other_df.loc[other_ee, 'self_lab_position']
+
+        # Compute survey shift based on closest ip
+        closest_ip = self_df.loc[ee, 'ip_name']
+        survey_shift = (
+                ip_position_df.loc[closest_ip, other_beam_nn].p
+              - ip_position_df.loc[closest_ip, self_beam_nn].p)
+
+        # Shift to reference system of self
+        other_lab_position.shift_survey(survey_shift)
+
+        # Store positions
+        self_df.loc[ee, 'other_lab_position'] = other_lab_position
+
+        # Get sigmas of the other beam in its own survey
         for ss in bbt._sigma_names:
             self_df.loc[ee, f'other_Sigma_{ss}'] = other_df.loc[other_ee, f'self_Sigma_{ss}']
 
-# Compute correction based on closest IP
 
+# Get ip locations from the survey
+ppppp
 
-prrrr
-
-ip_names = ['IP1', 'IP2', 'IP5', 'IP8']
-
-# Get IP locations from the survey
-mad.use("lhcb1")
-mad.twiss()
-mad.survey()
-IP_xyz_b1 = {}
-for ip in ip_names:
-    IP_xyz_b1[ip] = MadPoint.from_survey((ip + ":1").lower(), mad)
-mad.use("lhcb2")
-mad.twiss()
-mad.survey()
-IP_xyz_b2 = {}
-for ip in ip_names:
-    IP_xyz_b2[ip] = MadPoint.from_survey((ip + ":1").lower(), mad)
-
-
-shift_strong_beam_based_on_close_ip(
-    points_weak=bb_xyz_b1,
-    points_strong=bb_xyz_b2,
-    IPs_survey_weak=IP_xyz_b1,
-    IPs_survey_strong=IP_xyz_b2,
-)
 
 sep_x, sep_y = find_bb_separations(
     points_weak=bb_xyz_b1,

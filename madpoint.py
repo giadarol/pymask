@@ -91,6 +91,13 @@ class MadPoint(object):
         if use_survey:
             self.p += self.sp
 
+    def shift_survey(self, delta):
+        self.sx -= delta[0]
+        self.sy -= delta[1]
+        self.sz -= delta[2]
+        self.sp -= delta
+        self.p -= delta
+
     def dist(self, other):
         return np.sqrt(np.sum((self.p - other.p) ** 2))
 
