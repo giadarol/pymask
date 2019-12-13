@@ -196,3 +196,55 @@ def compute_local_crossing_angle_and_plane(bb_df):
         bb_df.loc[ee, 'alpha'] = alpha
         bb_df.loc[ee, 'phi'] = phi
 
+
+def get_counter_rotating(bb_df):
+
+    c_bb_df = pd.DataFrame(index=bb_df.index)
+
+    c_bb_df['beam'] = bbdf['beam']
+    c_bb_df['other_beam'] = bbdf['other_beam']
+    c_bb_df['ip_name'] = bbdf['ip_name']
+    c_bb_df['label'] = bbdf['label']
+    c_bb_df['identifier'] = bbdf['identifier']
+    c_bb_df['elementClass'] = bbdf['elementClass']
+    c_bb_df['elementAttributes'] = np.nan
+    c_bb_df['charge [ppb]'] = bbdf['charge [ppb]']
+    c_bb_df['other_elementName'] = bbdf['other_elementName']
+
+    c_bb_df['atPosition'] = bbdf['atPosition'] * (-1.)
+
+    c_bb_df['elementDefinition'] = np.nan
+    c_bb_df['elementInstallation'] = np.nan
+
+    c_bb_df['self_lab_position'] = np.nan
+    c_bb_df['other_lab_position'] = np.nan
+
+    c_bb_df['self_Sigma_11'] = bbdf['self_Sigma_11'] * (-1.) * (-1.)
+    c_bb_df['self_Sigma_12'] = bbdf['self_Sigma_12'] * (-1.) * (-1.) * (-1.)
+    c_bb_df['self_Sigma_13'] = bbdf['self_Sigma_13'] * (-1.)
+    c_bb_df['self_Sigma_14'] = bbdf['self_Sigma_14'] * (-1.) * (-1.)
+    c_bb_df['self_Sigma_22'] = bbdf['self_Sigma_22'] * (-1.) * (-1.) * (-1.) * (-1.)
+    c_bb_df['self_Sigma_23'] = bbdf['self_Sigma_23'] * (-1.) * (-1.)
+    c_bb_df['self_Sigma_24'] = bbdf['self_Sigma_24'] * (-1.) * (-1.) * (-1.)
+    c_bb_df['self_Sigma_33'] = bbdf['self_Sigma_33']
+    c_bb_df['self_Sigma_34'] = bbdf['self_Sigma_34'] * (-1.)
+    c_bb_df['self_Sigma_44'] = bbdf['self_Sigma_44'] * (-1.) * (-1.)
+
+    c_bb_df['other_Sigma_11'] = bbdf['other_Sigma_11'] * (-1.) * (-1.)
+    c_bb_df['other_Sigma_12'] = bbdf['other_Sigma_12'] * (-1.) * (-1.) * (-1.)
+    c_bb_df['other_Sigma_13'] = bbdf['other_Sigma_13'] * (-1.)
+    c_bb_df['other_Sigma_14'] = bbdf['other_Sigma_14'] * (-1.) * (-1.)
+    c_bb_df['other_Sigma_22'] = bbdf['other_Sigma_22'] * (-1.) * (-1.) * (-1.) * (-1.)
+    c_bb_df['other_Sigma_23'] = bbdf['other_Sigma_23'] * (-1.) * (-1.)
+    c_bb_df['other_Sigma_24'] = bbdf['other_Sigma_24'] * (-1.) * (-1.) * (-1.)
+    c_bb_df['other_Sigma_33'] = bbdf['other_Sigma_33']
+    c_bb_df['other_Sigma_34'] = bbdf['other_Sigma_34'] * (-1.)
+    c_bb_df['other_Sigma_44'] = bbdf['other_Sigma_44'] * (-1.) * (-1.)
+
+    c_bb_df['separation_x'] = bbdf['separation_x'] * (-1.)
+    c_bb_df['separation_y'] = bbdf['separation_y']
+
+    c_bb_df['alpha'] = bbdf['alpha'] * (-1.) #???????????
+    c_bb_df['phi'] = bbdf['phi'] # ???????
+
+    return c_bb_df
