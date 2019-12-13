@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import pandas as pd
 from cpymad.madx import Madx
@@ -173,7 +174,7 @@ for self_beam_nn in ['b1', 'b2']:
         other_ee = self_df.loc[ee, 'other_elementName']
 
         # Get position of the other beam in its own survey
-        other_lab_position = other_df.loc[other_ee, 'self_lab_position']
+        other_lab_position = copy.deepcopy(other_df.loc[other_ee, 'self_lab_position'])
 
         # Compute survey shift based on closest ip
         closest_ip = self_df.loc[ee, 'ip_name']
@@ -192,14 +193,32 @@ for self_beam_nn in ['b1', 'b2']:
             self_df.loc[ee, f'other_Sigma_{ss}'] = other_df.loc[other_ee, f'self_Sigma_{ss}']
 
 
-# Get ip locations from the survey
-ppppp
+# Compute separation 
+for self_beam_nn in ['b1', 'b2']:
 
+    self_df = dict_dfs[self_beam_nn]
+    other_df = dict_dfs[self_df['other_beam'].iloc[0]]
 
-sep_x, sep_y = find_bb_separations(
-    points_weak=bb_xyz_b1,
-    points_strong=bb_xyz_b2,
-    names=bb_names_b1,
-    )
-    
+    sep_x, sep_y = find_bb_separations(
+        points_weak=self_df['self_lab_position'].values,
+        points_strong=self_df['other_lab_position'].values,
+        names=self_df.index.values,
+        )
+
+    self_df['separation_x'] = sep_x
+    self_df['separation_y'] = sep_y
+
+# Compute local crossing plane and angle
+for self_beam_nn in ['b1', 'b2']:
+
+    self_df = dict_dfs[self_beam_nn]
+
+    for ee in self_df.index:
+        dpx = self_df.loc[ee, 'self_lab_position'].tpx - self_df.loc[ee, 'other_lab_position'].tpx
+        dpy = self_df.loc[ee, 'self_lab_position'].tpy - self_df.loc[ee, 'other_lab_position'].tpy
+
+        alpha, phi = bbt.find_alpha_and_phi(dpx, dpy)
+
+        self_df.loc[ee, 'alpha'] = alpha
+        self_df.loc[ee, 'phi'] = phi
 

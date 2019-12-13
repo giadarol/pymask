@@ -97,21 +97,60 @@ def get_points_twissdata_for_element_type(
 ###############################
 # beam beam related functions #
 ###############################
+
 def find_alpha_and_phi(dpx, dpy):
 
-    phi = np.sqrt(dpx ** 2 + dpy ** 2) / 2.0
-    if phi < 1e-20:
+    absphi = np.sqrt(dpx ** 2 + dpy ** 2) / 2.0
+
+    if absphi < 1e-20:
+        phi = absphi
         alpha = 0.0
-    elif np.abs(dpx) >= np.abs(dpy):
-        alpha = np.arctan(dpy / dpx)
-        if dpx < 0:
-            phi = -phi
     else:
-        alpha = np.sign(dpy) * (np.pi / 2 - np.abs(np.arctan(dpx / dpy)))
-        if dpy < 0:
-            phi = -phi
+        if dpy>=0.:
+            if dpx>=0:
+                # First quadrant
+                if np.abs(dpx) >= np.abs(dpy):
+                    # First octant
+                    phi = absphi
+                    alpha = np.arctan(dpy/dpx)
+                else:
+                    # Second octant
+                    phi = absphi
+                    alpha = 0.5*np.pi - np.arctan(dpx/dpy)
+            else: #dpx<0
+                # Second quadrant
+                if np.abs(dpx) <  np.abs(dpy):
+                    # Third octant
+                    phi = absphi
+                    alpha = 0.5*np.pi - np.arctan(dpx/dpy)
+                else:
+                    # Forth  octant
+                    phi = -absphi
+                    alpha = np.arctan(dpy/dpx)
+        else: #dpy<0
+            if dpx<=0:
+                # Third quadrant
+                if np.abs(dpx) >= np.abs(dpy):
+                    # Fifth octant
+                    phi = -absphi
+                    alpha = np.arctan(dpy/dpx)
+                else:
+                    # Sixth octant
+                    phi = -absphi
+                    alpha = 0.5*np.pi - np.arctan(dpx/dpy)
+            else: #dpx>0
+                # Forth quadrant
+                if np.abs(dpx) <= np.abs(dpy):
+                    # Seventh octant
+                    phi = -absphi
+                    alpha = 0.5*np.pi - np.arctan(dpx/dpy)
+                else:
+                    # Eighth octant
+                    phi = absphi
+                    alpha = np.arctan(dpy/dpx)
 
     return alpha, phi
+
 
 
 def get_bb_names_madpoints_sigmas(
@@ -158,7 +197,7 @@ def compute_shift_strong_beam_based_on_close_ip(
     return strong_shift
 
 
-def find_bb_separations(points_weak, points_strong, strong_shift, names=None):
+def find_bb_separations(points_weak, points_strong, names=None):
 
     if names is None:
         names = ["bb_%d" % ii for ii in range(len(points_weak))]
@@ -171,9 +210,7 @@ def find_bb_separations(points_weak, points_strong, strong_shift, names=None):
         pbs = points_strong[i_bb]
 
         # Find vws
-        vbb_ws = (points_strong[i_bb].p - strong_shift[i_bb]) - points_weak[
-            i_bb
-        ].p
+        vbb_ws = points_strong[i_bb].p - points_weak[i_bb].p
 
         # Check that the two reference system are parallel
         try:

@@ -221,6 +221,10 @@ twiss, sequence=lhcb2, file=twiss.b2;system,"cat twiss.b2";
 
 
 !guido
+on_sep1 = 0;
+on_sep2 = 0;
+on_sep5 = 0;
+on_sep8 = 0;
 save, sequence=lhcb1,lhcb2, beam=true, file=lhc_without_bb.seq;
 !*/
 
