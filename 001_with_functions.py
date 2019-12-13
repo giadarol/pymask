@@ -48,3 +48,6 @@ bbs.get_partner_corrected_position_and_optics(
 for bb_df in [bb_df_b1, bb_df_b2]:
     bbs.compute_separations(bb_df)
     bbs.compute_local_crossing_angle_and_plane(bb_df)
+
+# Get bb dataframe for beam 4
+bb_df_b4 = bbs.get_counter_rotating(bb_df_b2)
