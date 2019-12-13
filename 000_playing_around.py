@@ -6,7 +6,7 @@ import smallTempPackage as tp
 
 
 def BB_FULL(
-    circumference=27000,
+    circumference=26658.8832,
     harmonic_number = 35640,
     bunch_spacing_buckets = 10,
     numberOfLRPerIRSide=21,

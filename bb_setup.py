@@ -6,10 +6,11 @@ import pandas as pd
 from cpymad.madx import Madx
 
 import smallTempPackage as tp
-
+import tools as bbt
+from madpoint import MadPoint
 
 def generate_set_of_bb_encounters_1beam(
-    circumference=27000,
+    circumference=26658.8832,
     harmonic_number = 35640,
     bunch_spacing_buckets = 10,
     numberOfLRPerIRSide=21,
@@ -78,6 +79,8 @@ def generate_set_of_bb_encounters_1beam(
     myBBHO['elementInstallation']=myBBHO.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
 
     myBB=pd.concat([myBBHO, myBBLR],sort=False)
+    myBB = myBB.set_index('elementName', verify_integrity=True).sort_index()
+
     return myBB
 
 def build_mad_instance_with_dummy_bb(sequences_file_name, bb_data_frames,
@@ -90,7 +93,8 @@ def build_mad_instance_with_dummy_bb(sequences_file_name, bb_data_frames,
     mad.options.info = mad_info
 
     mad.call(sequences_file_name)# assuming a sequence rotated in IR3
-    mad.input(bb_df['elementDefinition'].str.cat(sep='\n'))
+    for bb_df in bb_data_frames:
+        mad.input(bb_df['elementDefinition'].str.cat(sep='\n'))
 
     # %% seqedit
     for beam, bb_df, seq in zip(beam_names, bb_data_frames, sequence_names):
@@ -106,9 +110,9 @@ def build_mad_instance_with_dummy_bb(sequences_file_name, bb_data_frames,
 def get_geometry_and_optics_b1_b2(mad, bb_df_b1, bb_df_b2):
 
     for beam, bbdf in zip(['b1', 'b2'], [bb_df_b1, bb_df_b2]):
-        # Get locations of the bb encounters (absolute from survey), closed orbit
+        # Get positions of the bb encounters (absolute from survey), closed orbit
         # and orientation of the local reference system (MadPoint objects)
-        names, positions, sigmas = get_bb_names_madpoints_sigmas(
+        names, positions, sigmas = bbt.get_bb_names_madpoints_sigmas(
             mad, seq_name="lhc"+beam
         )
 
@@ -123,10 +127,10 @@ def get_geometry_and_optics_b1_b2(mad, bb_df_b1, bb_df_b2):
         for cc in temp_df.columns:
             bbdf[cc] = temp_df[cc]
 
-def get_survey_ip_location_b1_b2(mad):
+def get_survey_ip_position_b1_b2(mad,
+        ip_names = ['ip1', 'ip2', 'ip5', 'ip8']):
 
     # Get ip position in the two surveys
-    ip_names = ['ip1', 'ip2', 'ip5', 'ip8']
 
     ip_position_df = pd.DataFrame()
 
@@ -138,7 +142,7 @@ def get_survey_ip_location_b1_b2(mad):
 
     return ip_position_df
 
-def get_partner_corrected_location_and_optics(bb_df_b1, bb_df_b2, ip_location_df):
+def get_partner_corrected_position_and_optics(bb_df_b1, bb_df_b2, ip_position_df):
 
     dict_dfs = {'b1': bb_df_b1, 'b2': bb_df_b2}
 
@@ -172,7 +176,7 @@ def get_partner_corrected_location_and_optics(bb_df_b1, bb_df_b2, ip_location_df
 
 def compute_separations(bb_df):
 
-    sep_x, sep_y = find_bb_separations(
+    sep_x, sep_y = bbt.find_bb_separations(
         points_weak=bb_df['self_lab_position'].values,
         points_strong=bb_df['other_lab_position'].values,
         names=bb_df.index.values,
@@ -183,14 +187,12 @@ def compute_separations(bb_df):
 
 def compute_local_crossing_angle_and_plane(bb_df):
 
-    bb_df = dict_dfs[self_beam_nn]
-
     for ee in bb_df.index:
         dpx = bb_df.loc[ee, 'self_lab_position'].tpx - bb_df.loc[ee, 'other_lab_position'].tpx
         dpy = bb_df.loc[ee, 'self_lab_position'].tpy - bb_df.loc[ee, 'other_lab_position'].tpy
 
         alpha, phi = bbt.find_alpha_and_phi(dpx, dpy)
 
-        self_df.loc[ee, 'alpha'] = alpha
-        self_df.loc[ee, 'phi'] = phi
+        bb_df.loc[ee, 'alpha'] = alpha
+        bb_df.loc[ee, 'phi'] = phi
 
