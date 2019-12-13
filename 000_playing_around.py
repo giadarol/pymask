@@ -79,7 +79,6 @@ def BB_FULL(
 bb_df_b1 = BB_FULL(beam_name='b1', other_beam_name='b2').set_index('elementName', verify_integrity=True).sort_index()
 bb_df_b2 = BB_FULL(beam_name='b2', other_beam_name='b1').set_index('elementName', verify_integrity=True).sort_index()
 
-
 # -------------------------------------------------------------------------------------
 
 def build_mad_instance_with_dummy_bb(sequences_file_name, bb_df,
@@ -158,14 +157,14 @@ for self_nn, other_nn in zip(['b1', 'b2'], ['b2', 'b1']):
 
     for ee in self_df.index:
         other_ee = self_df.loc[ee, 'other_elementName']
-        self_df.loc[self_nn, 'other_lab_position'] = other_df.loc[other_ee, 'self_lab_position']
+        self_df.loc[ee, 'other_lab_position'] = other_df.loc[other_ee, 'self_lab_position']
         for ss in bbt._sigma_names:
-            self_df.loc[self_nn, f'other_Sigma_{ss}'] = other_df.loc[other_ee, f'self_Sigma_{ss}']
+            self_df.loc[ee, f'other_Sigma_{ss}'] = other_df.loc[other_ee, f'self_Sigma_{ss}']
 
 # Compute correction based on closest IP
 
 
-
+prrrr
 
 ip_names = ['IP1', 'IP2', 'IP5', 'IP8']
 
