@@ -1,29 +1,28 @@
 import bb_setup as bbs
 
-sequence_fname = 'mad/lhc_without_bb.seq' 
+sequence_fname = 'mad/lhc_without_bb.seq'
 ip_names = ['ip1', 'ip2', 'ip5', 'ip8']
+
+circumference = 26658.8832
+harmonic_number = 35640
+bunch_spacing_buckets = 10
+numberOfLRPerIRSide = 21
+numberOfHOSlices = 11
+sigt = 0.0755
 
 # Generate dataframes with names and location of the bb encounters (B1)
 bb_df_b1 = bbs.generate_set_of_bb_encounters_1beam(
-    circumference=26658.8832,
-    harmonic_number = 35640,
-    bunch_spacing_buckets = 10,
-    numberOfLRPerIRSide=21,
-    numberOfHOSlices = 11,
-    sigt=0.0755,
-    ip_names = ip_names,
+    circumference, harmonic_number,
+    bunch_spacing_buckets, numberOfLRPerIRSide,
+    numberOfHOSlices, sigt, ip_names,
     beam_name = 'b1',
     other_beam_name = 'b2')
 
 # Generate dataframes with names and location of the bb encounters (B1)
 bb_df_b2 = bbs.generate_set_of_bb_encounters_1beam(
-    circumference=26658.8832,
-    harmonic_number = 35640,
-    bunch_spacing_buckets = 10,
-    numberOfLRPerIRSide=21,
-    numberOfHOSlices = 11,
-    sigt=0.0755,
-    ip_names = ip_names,
+    circumference, harmonic_number,
+    bunch_spacing_buckets, numberOfLRPerIRSide,
+    numberOfHOSlices, sigt, ip_names,
     beam_name = 'b2',
     other_beam_name = 'b1')
 
