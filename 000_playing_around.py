@@ -12,7 +12,8 @@ def BB_FULL(
     numberOfHOSlices = 11,
     sigt=0.0755,
     ip_names = ['IP1', 'IP2', 'IP5', 'IP8'],
-    beam_name = 'b1'
+    beam_name = 'b1',
+    other_beam_name = 'b2'
     ):
 
 
@@ -20,12 +21,15 @@ def BB_FULL(
     myBBLRlist=[]
     for ip_nn in ip_names:
         for identifier in (list(range(-numberOfLRPerIRSide,0))+list(range(1,numberOfLRPerIRSide+1))):
-            myBBLRlist.append({'label':'bb_lr', 'ip_name':ip_nn, 'beam':beam_name, 'identifier':identifier})
+            myBBLRlist.append({'label':'bb_lr', 'ip_name':ip_nn, 'beam':beam_name, 'other_beam':other_beam_name,
+                'identifier':identifier})
 
-    myBBLR=pd.DataFrame(myBBLRlist)[['beam','ip_name','label','identifier']]
+    myBBLR=pd.DataFrame(myBBLRlist)[['beam','other_beam','ip_name','label','identifier']]
     myBBLR['elementClass']='beambeam'
     myBBLR['charge [ppb]']=0.
     myBBLR['elementName']=myBBLR.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('IP', ''), x.beam, x.identifier), axis=1)
+    myBBLR['other_elementName']=myBBLR.apply(
+            lambda x: tp.elementName(x.label, x.ip_name.replace('IP', ''), x.other_beam, x.identifier), axis=1)
     myBBLR['elementClass']='beambeam'
     myBBLR['elementAttributes']=lambda charge:'sigx = 0.1, '   + \
                 'sigy = 0.1, '   + \
@@ -49,9 +53,9 @@ def BB_FULL(
 
     for ip_nn in ip_names:
         for identifier in (list(range(-numberOfSliceOnSide,0))+[0]+list(range(1,numberOfSliceOnSide+1))):
-            myBBHOlist.append({'label':'bb_ho', 'ip_name':ip_nn, 'beam':beam_name, 'identifier':identifier})
+            myBBHOlist.append({'label':'bb_ho', 'ip_name':ip_nn, 'other_beam':other_beam_name, 'beam':beam_name, 'identifier':identifier})
 
-    myBBHO=pd.DataFrame(myBBHOlist)[['beam','ip_name','label','identifier']]
+    myBBHO=pd.DataFrame(myBBHOlist)[['beam','other_beam', 'ip_name','label','identifier']]
     myBBHO['elementClass']='beambeam'
     myBBHO['elementAttributes']=lambda charge:'sigx = 0.1, '   + \
                 'sigy = 0.1, '   + \
@@ -59,11 +63,12 @@ def BB_FULL(
                 'yma  = 1, '     + \
                 f'charge := {charge}'
 
-    myBBHO['charge [ppb]']=0 
+    myBBHO['charge [ppb]']=0
     for ip_nn in ip_names:
         myBBHO.loc[myBBHO['ip_name']==ip_nn, 'atPosition']=list(z_centroids)
 
     myBBHO['elementName']=myBBHO.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('IP', ''), x.beam, x.identifier), axis=1)
+    myBBHO['other_elementName']=myBBHO.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('IP', ''), x.other_beam, x.identifier), axis=1)
     myBBHO['elementDefinition']=myBBHO.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['charge [ppb]']*0) ), axis=1)
     # assuming a sequence rotated in IR3
     myBBHO['elementInstallation']=myBBHO.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
@@ -71,8 +76,8 @@ def BB_FULL(
     myBB=pd.concat([myBBHO, myBBLR],sort=False)
     return myBB
 
-bb_df_b1 = BB_FULL(beam_name = 'b1').set_index('elementName', verify_integrity=True).sort_index()
-bb_df_b2 = BB_FULL(beam_name = 'b2').set_index('elementName', verify_integrity=True).sort_index()
+bb_df_b1 = BB_FULL(beam_name='b1', other_beam_name='b2').set_index('elementName', verify_integrity=True).sort_index()
+bb_df_b2 = BB_FULL(beam_name='b2', other_beam_name='b1').set_index('elementName', verify_integrity=True).sort_index()
 
 
 # -------------------------------------------------------------------------------------
@@ -118,7 +123,9 @@ for beam in ['b1', 'b2']:
 
 # Go to Gianni's stuff
 from tools import MadPoint, get_bb_names_madpoints_sigmas, compute_shift_strong_beam_based_on_close_ip, find_bb_separations
+import tools as bbt
 
+temp_dict={}
 
 for beam, bbdf in zip(['b1', 'b2'], [bb_df_b1, bb_df_b2]):
     # Get locations of the bb encounters (absolute from survey), closed orbit
@@ -130,15 +137,18 @@ for beam, bbdf in zip(['b1', 'b2'], [bb_df_b1, bb_df_b2]):
     temp_df = pd.DataFrame()
     temp_df['self_lab_position'] = positions
     temp_df['elementName'] = names
-    temp_df['self_Sigmas'] = [{kk: sigmas[kk][ibb] for kk in sigmas.keys()} for ibb in range(len(names))]
+    for ss in sigmas.keys():
+        temp_df[f'self_Sigma_{ss}'] = sigmas[ss]
 
     temp_df = temp_df.set_index('elementName', verify_integrity=True).sort_index()
 
     for cc in temp_df.columns:
         bbdf[cc] = temp_df[cc]
 
+    # DEBUG
+    temp_dict[beam] = {'sigmas':sigmas, 'positions':positions, 'names':names}
 
-
+# Find partner position and sigmas
 dict_dfs = {'b1': bb_df_b1, 'b2': bb_df_b2}
 
 for self_nn, other_nn in zip(['b1', 'b2'], ['b2', 'b1']):
@@ -146,17 +156,16 @@ for self_nn, other_nn in zip(['b1', 'b2'], ['b2', 'b1']):
     self_df = dict_dfs[self_nn]
     other_df = dict_dfs[other_nn]
 
-    self_df['other_lab_positions'] = np.nan
-    self_df['other_Sigmas'] = np.nan
-
     for ee in self_df.index:
-        # Assumption 'b1', 'b2' are in the element names
-        other_ee = ee.replace(self_nn, other_nn)
-        self_df.loc[self_nn, 'other_lab_positions'] = other_df[other_ee, 'self_lab_position']
-        self_df.loc[self_nn, 'other_Sigmas'] = other_df[other_ee, 'self_Sigmas']
+        other_ee = self_df.loc[ee, 'other_elementName']
+        self_df.loc[self_nn, 'other_lab_position'] = other_df.loc[other_ee, 'self_lab_position']
+        for ss in bbt._sigma_names:
+            self_df.loc[self_nn, f'other_Sigma_{ss}'] = other_df.loc[other_ee, f'self_Sigma_{ss}']
+
+# Compute correction based on closest IP
 
 
-prrrr
+
 
 ip_names = ['IP1', 'IP2', 'IP5', 'IP8']
 
