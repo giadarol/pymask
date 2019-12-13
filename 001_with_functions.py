@@ -18,7 +18,7 @@ bb_df_b1 = bbs.generate_set_of_bb_encounters_1beam(
     beam_name = 'b1',
     other_beam_name = 'b2')
 
-# Generate dataframes with names and location of the bb encounters (B1)
+# Generate dataframes with names and location of the bb encounters (B2)
 bb_df_b2 = bbs.generate_set_of_bb_encounters_1beam(
     circumference, harmonic_number,
     bunch_spacing_buckets, numberOfLRPerIRSide,
