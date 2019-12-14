@@ -965,4 +965,9 @@ if (not_a_mask==1){
 
 ! Gianni: save sequences
 save, sequence=lhcb1, beam=true, file=lhcwbb_fortracking.seq;
+
+exec REMOVE_BB_LENS;
+
+save, sequence=lhcb1, beam=true, file=lhc_without_bb_fortracking.seq;
+
 !stop;
