@@ -37,7 +37,7 @@ mad = bbs.build_mad_instance_with_dummy_bb(
 # Use mad survey and twiss to get geometry and locations of all encounters
 bbs.get_geometry_and_optics_b1_b2(mad, bb_df_b1, bb_df_b2)
 
-# Get the position ot the IPs in the surveys of the two beams
+# Get the position of the IPs in the surveys of the two beams
 ip_position_df = bbs.get_survey_ip_position_b1_b2(mad, ip_names)
 
 # Get geometry and optics at the partner encounter
