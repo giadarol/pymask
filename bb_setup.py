@@ -185,13 +185,22 @@ def compute_separations(bb_df):
     bb_df['separation_x'] = sep_x
     bb_df['separation_y'] = sep_y
 
+def compute_dpx_dpy(bb_df):
+    # Defined as (weak) - (strong)
+    for ee in bb_df.index:
+        dpx = (bb_df.loc[ee, 'self_lab_position'].tpx
+                - bb_df.loc[ee, 'other_lab_position'].tpx)
+        dpy = (bb_df.loc[ee, 'self_lab_position'].tpy
+                - bb_df.loc[ee, 'other_lab_position'].tpy)
+
+        bb_df.loc[ee, 'dpx'] = dpx
+        bb_df.loc[ee, 'dpy'] = dpy
+
 def compute_local_crossing_angle_and_plane(bb_df):
 
     for ee in bb_df.index:
-        dpx = bb_df.loc[ee, 'self_lab_position'].tpx - bb_df.loc[ee, 'other_lab_position'].tpx
-        dpy = bb_df.loc[ee, 'self_lab_position'].tpy - bb_df.loc[ee, 'other_lab_position'].tpy
-
-        alpha, phi = bbt.find_alpha_and_phi(dpx, dpy)
+        alpha, phi = bbt.find_alpha_and_phi(
+                bb_df.loc[ee, 'dpx'], bb_df.loc[ee, 'dpy'])
 
         bb_df.loc[ee, 'alpha'] = alpha
         bb_df.loc[ee, 'phi'] = phi
@@ -244,7 +253,10 @@ def get_counter_rotating(bb_df):
     c_bb_df['separation_x'] = bb_df['separation_x'] * (-1.)
     c_bb_df['separation_y'] = bb_df['separation_y']
 
-    c_bb_df['alpha'] = bb_df['alpha'] * (-1.) #???????????
-    c_bb_df['phi'] = bb_df['phi'] # ???????
+    c_bb_df['dpx'] = bb_df['dpx'] * (-1.) * (-1.)
+    c_bb_df['dpy'] = bb_df['dpy'] * (-1.)
+
+    # Compute phi and alpha from dpx and dpy
+    compute_local_crossing_angle_and_plane(c_bb_df)
 
     return c_bb_df
