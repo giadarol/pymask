@@ -9,12 +9,15 @@ bunch_spacing_buckets = 10
 numberOfLRPerIRSide = 21
 numberOfHOSlices = 11
 sigt = 0.0755
+bunch_charge_ppb = 1e11
+relativistic_beta = 0.999
 
 # Generate dataframes with names and location of the bb encounters (B1)
 bb_df_b1 = bbs.generate_set_of_bb_encounters_1beam(
     circumference, harmonic_number,
     bunch_spacing_buckets, numberOfLRPerIRSide,
-    numberOfHOSlices, sigt, ip_names,
+    numberOfHOSlices, bunch_charge_ppb, sigt,
+    relativistic_beta, ip_names,
     beam_name = 'b1',
     other_beam_name = 'b2')
 
@@ -22,7 +25,8 @@ bb_df_b1 = bbs.generate_set_of_bb_encounters_1beam(
 bb_df_b2 = bbs.generate_set_of_bb_encounters_1beam(
     circumference, harmonic_number,
     bunch_spacing_buckets, numberOfLRPerIRSide,
-    numberOfHOSlices, sigt, ip_names,
+    numberOfHOSlices, bunch_charge_ppb, sigt,
+    relativistic_beta, ip_names,
     beam_name = 'b2',
     other_beam_name = 'b1')
 

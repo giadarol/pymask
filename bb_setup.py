@@ -15,7 +15,9 @@ def generate_set_of_bb_encounters_1beam(
     bunch_spacing_buckets = 10,
     numberOfLRPerIRSide=21,
     numberOfHOSlices = 11,
+    bunch_charge_ppb = 0.,
     sigt=0.0755,
+    relativistic_beta=1.,
     ip_names = ['ip1', 'ip2', 'ip5', 'ip8'],
     beam_name = 'b1',
     other_beam_name = 'b2'
@@ -30,7 +32,7 @@ def generate_set_of_bb_encounters_1beam(
                 'identifier':identifier})
 
     myBBLR=pd.DataFrame(myBBLRlist)[['beam','other_beam','ip_name','label','identifier']]
-    myBBLR['charge [ppb]']=0.
+    myBBLR['self_charge_ppb'] = bunch_charge_ppb
     myBBLR['elementName']=myBBLR.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
     myBBLR['other_elementName']=myBBLR.apply(
             lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
@@ -53,7 +55,7 @@ def generate_set_of_bb_encounters_1beam(
 
     myBBHO=pd.DataFrame(myBBHOlist)[['beam','other_beam', 'ip_name','label','identifier']]
 
-    myBBHO['charge [ppb]']=0
+    myBBHO['self_charge_ppb'] = bunch_charge_ppb/numberOfHOSlices
     for ip_nn in ip_names:
         myBBHO.loc[myBBHO['ip_name']==ip_nn, 'atPosition']=list(z_centroids)
 
@@ -73,8 +75,8 @@ def generate_mad_bb_info(bb_df):
                 'sigy = 0.1, '   + \
                 'xma  = 1, '     + \
                 'yma  = 1, '     + \
-                f'charge := {charge}'
-    bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['charge [ppb]']*0) ), axis=1)
+                'charge = 0*charge'
+    bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['self_charge_ppb'])), axis=1)
     bb_df['elementInstallation']=bb_df.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
 
     return bb_df
@@ -169,6 +171,8 @@ def get_partner_corrected_position_and_optics(bb_df_b1, bb_df_b2, ip_position_df
             # Get sigmas of the other beam in its own survey
             for ss in bbt._sigma_names:
                 self_df.loc[ee, f'other_Sigma_{ss}'] = other_df.loc[other_ee, f'self_Sigma_{ss}']
+            # Get charge of other beam
+            self_df.loc[ee, 'other_charge_ppb'] = other_df.loc[other_ee, 'self_charge_ppb']
 
 def compute_separations(bb_df):
 
@@ -213,7 +217,7 @@ def get_counter_rotating(bb_df):
     c_bb_df['identifier'] = bb_df['identifier']
     c_bb_df['elementClass'] = bb_df['elementClass']
     c_bb_df['elementAttributes'] = np.nan
-    c_bb_df['charge [ppb]'] = bb_df['charge [ppb]']
+    c_bb_df['self_charge_ppb'] = bb_df['self_charge_ppb']
     c_bb_df['other_elementName'] = bb_df['other_elementName']
 
     c_bb_df['atPosition'] = bb_df['atPosition'] * (-1.)
@@ -256,3 +260,48 @@ def get_counter_rotating(bb_df):
     compute_local_crossing_angle_and_plane(c_bb_df)
 
     return c_bb_df
+
+
+def setup_beam_beam_in_line(
+    line,
+    bb_df,
+    bb_coupling=False,
+):
+
+    assert bb_coupling is False  # Not implemented
+
+    for ee, eename in zip(line.elements, line.element_names):
+        if isinstance(ee, pysixtrack.elements.BeamBeam4D):
+            ee.charge = bb_df.loc[eename, 'other_charge_ppb']
+            ee.sigma_x = np.sqrt(bb_df.loc[eename, 'other_Sigma_11'])
+            ee.sigma_y = np.sqrt(bb_df.loc[eename, 'other_Sigma_33'])
+            ee.beta_r = bb_df.loc[eename, 'other_beta_r']
+            ee.x_bb = bb_df.loc[eename, 'separation_x']
+            ee.y_bb = bb_df.loc[eename, 'separation_y']
+
+        if isinstance(ee, pysixtrack.elements.BeamBeam6D):
+
+            ee.phi = bb_df.loc[eename, 'phi']
+            ee.alpha = bb_df.loc[eename, 'alpha']
+            ee.x_bb_co = bb_df.loc[eename, 'separation_x']
+            ee.y_bb_co = bb_df.loc[eename, 'separation_y']
+
+            ee.charge_slices = [bb_df.loc[eename, 'other_charge_ppb']]
+            ee.zeta_slices = [0.0]
+            ee.sigma_11 = bb_df.loc[eename, 'other_Sigma_11']
+            ee.sigma_12 = bb_df.loc[eename, 'other_Sigma_12']
+            ee.sigma_13 = bb_df.loc[eename, 'other_Sigma_13']
+            ee.sigma_14 = bb_df.loc[eename, 'other_Sigma_14']
+            ee.sigma_22 = bb_df.loc[eename, 'other_Sigma_22']
+            ee.sigma_23 = bb_df.loc[eename, 'other_Sigma_23']
+            ee.sigma_24 = bb_df.loc[eename, 'other_Sigma_24']
+            ee.sigma_33 = bb_df.loc[eename, 'other_Sigma_33']
+            ee.sigma_34 = bb_df.loc[eename, 'other_Sigma_34']
+            ee.sigma_44 = bb_df.loc[eename, 'other_Sigma_44']
+
+            if not (bb_coupling):
+                ee.sigma_13 = 0.0
+                ee.sigma_14 = 0.0
+                ee.sigma_23 = 0.0
+                ee.sigma_24 = 0.0
+
