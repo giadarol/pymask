@@ -13,12 +13,12 @@ def generate_set_of_bb_encounters_1beam(
     circumference=26658.8832,
     harmonic_number = 35640,
     bunch_spacing_buckets = 10,
-    numberOfLRPerIRSide=21,
     numberOfHOSlices = 11,
     bunch_charge_ppb = 0.,
     sigt=0.0755,
     relativistic_beta=1.,
     ip_names = ['ip1', 'ip2', 'ip5', 'ip8'],
+    numberOfLRPerIRSide=[21, 20, 21, 20],
     beam_name = 'b1',
     other_beam_name = 'b2'
     ):
@@ -26,8 +26,8 @@ def generate_set_of_bb_encounters_1beam(
 
     # Long-Range
     myBBLRlist=[]
-    for ip_nn in ip_names:
-        for identifier in (list(range(-numberOfLRPerIRSide,0))+list(range(1,numberOfLRPerIRSide+1))):
+    for ii, ip_nn in enumerate(ip_names):
+        for identifier in (list(range(-numberOfLRPerIRSide[ii],0))+list(range(1,numberOfLRPerIRSide[ii]+1))):
             myBBLRlist.append({'label':'bb_lr', 'ip_name':ip_nn, 'beam':beam_name, 'other_beam':other_beam_name,
                 'identifier':identifier})
 

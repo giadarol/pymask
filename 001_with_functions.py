@@ -11,32 +11,31 @@ generate_pysixtrack_lines = True
 sequence_fname = 'mad/lhc_without_bb.seq'
 sequence_for_tracking_fname = 'mad/lhc_without_bb_fortracking.seq'
 ip_names = ['ip1', 'ip2', 'ip5', 'ip8']
-
+numberOfLRPerIRSide = [21, 20, 21, 20]
 circumference = 26658.8832
 harmonic_number = 35640
 bunch_spacing_buckets = 10
-numberOfLRPerIRSide = 21
 numberOfHOSlices = 11
 sigt = 0.075
 bunch_charge_ppb = 1.2e11
-relativisti_gamma=6927.628061781486
+relativistic_gamma=6927.628061781486
 relativistic_beta = np.sqrt(1 - 1.0 / relativistic_gamma ** 2)
 
 # Generate dataframes with names and location of the bb encounters (B1)
 bb_df_b1 = bbs.generate_set_of_bb_encounters_1beam(
     circumference, harmonic_number,
-    bunch_spacing_buckets, numberOfLRPerIRSide,
+    bunch_spacing_buckets,
     numberOfHOSlices, bunch_charge_ppb, sigt,
-    relativistic_beta, ip_names,
+    relativistic_beta, ip_names, numberOfLRPerIRSide,
     beam_name = 'b1',
     other_beam_name = 'b2')
 
 # Generate dataframes with names and location of the bb encounters (B2)
 bb_df_b2 = bbs.generate_set_of_bb_encounters_1beam(
     circumference, harmonic_number,
-    bunch_spacing_buckets, numberOfLRPerIRSide,
+    bunch_spacing_buckets,
     numberOfHOSlices, bunch_charge_ppb, sigt,
-    relativistic_beta, ip_names,
+    relativistic_beta, ip_names, numberOfLRPerIRSide,
     beam_name = 'b2',
     other_beam_name = 'b1')
 
