@@ -9,6 +9,7 @@ import smallTempPackage as tp
 import tools as bbt
 from madpoint import MadPoint
 
+
 def generate_set_of_bb_encounters_1beam(
     circumference=26658.8832,
     harmonic_number = 35640,
@@ -73,12 +74,13 @@ def generate_set_of_bb_encounters_1beam(
 def generate_mad_bb_info(bb_df):
 
     bb_df['elementClass']='beambeam'
-    bb_df['elementAttributes']=lambda charge:'sigx = 0.1, '   + \
+    bb_df['elementAttributes']=lambda charge, label:'sigx = 0.1, '   + \
                 'sigy = 0.1, '   + \
                 'xma  = 1, '     + \
                 'yma  = 1, '     + \
-                'charge = 0*charge'
-    bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['self_charge_ppb'])), axis=1)
+                f'charge = 0*{charge}, ' +\
+                'slot_id = %d'%({'bb_lr': 4, 'bb_ho': 6}[label]) # need to add 60 for central
+    bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['self_charge_ppb'], x['label'])), axis=1)
     bb_df['elementInstallation']=bb_df.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
 
     return bb_df
