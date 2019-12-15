@@ -26,8 +26,12 @@ bb_df_b2 = bbs.generate_set_of_bb_encounters_1beam(
     beam_name = 'b2',
     other_beam_name = 'b1')
 
+# Generate mad info
+bbs.generate_mad_bb_info(bb_df_b1)
+bbs.generate_mad_bb_info(bb_df_b2)
+
 # Install dummy bb lenses in mad sequences
-mad = bbs.build_mad_instance_with_dummy_bb(
+mad = bbs.build_mad_instance_with_bb(
     sequences_file_name=sequence_fname,
     bb_data_frames=[bb_df_b1, bb_df_b2],
     beam_names=['b1', 'b2'],
