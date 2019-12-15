@@ -33,6 +33,7 @@ def generate_set_of_bb_encounters_1beam(
 
     myBBLR=pd.DataFrame(myBBLRlist)[['beam','other_beam','ip_name','label','identifier']]
     myBBLR['self_charge_ppb'] = bunch_charge_ppb
+    myBBLR['self_relativistic_beta'] = relativistic_beta
     myBBLR['elementName']=myBBLR.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
     myBBLR['other_elementName']=myBBLR.apply(
             lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
@@ -56,6 +57,7 @@ def generate_set_of_bb_encounters_1beam(
     myBBHO=pd.DataFrame(myBBHOlist)[['beam','other_beam', 'ip_name','label','identifier']]
 
     myBBHO['self_charge_ppb'] = bunch_charge_ppb/numberOfHOSlices
+    myBBHO['self_relativistic_beta'] = relativistic_beta
     for ip_nn in ip_names:
         myBBHO.loc[myBBHO['ip_name']==ip_nn, 'atPosition']=list(z_centroids)
 
@@ -173,6 +175,7 @@ def get_partner_corrected_position_and_optics(bb_df_b1, bb_df_b2, ip_position_df
                 self_df.loc[ee, f'other_Sigma_{ss}'] = other_df.loc[other_ee, f'self_Sigma_{ss}']
             # Get charge of other beam
             self_df.loc[ee, 'other_charge_ppb'] = other_df.loc[other_ee, 'self_charge_ppb']
+            self_df.loc[ee, 'other_relativistic_beta'] = other_df.loc[other_ee, 'self_relativistic_beta']
 
 def compute_separations(bb_df):
 
@@ -275,7 +278,7 @@ def setup_beam_beam_in_line(
             ee.charge = bb_df.loc[eename, 'other_charge_ppb']
             ee.sigma_x = np.sqrt(bb_df.loc[eename, 'other_Sigma_11'])
             ee.sigma_y = np.sqrt(bb_df.loc[eename, 'other_Sigma_33'])
-            ee.beta_r = bb_df.loc[eename, 'other_beta_r']
+            ee.beta_r = bb_df.loc[eename, 'other_relativistic_beta']
             ee.x_bb = bb_df.loc[eename, 'separation_x']
             ee.y_bb = bb_df.loc[eename, 'separation_y']
 
