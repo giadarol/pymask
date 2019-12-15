@@ -83,6 +83,72 @@ def generate_set_of_bb_encounters_1beam(
 
     return myBB
 
+def generate_set_of_bb_encounters_1beam(bb_df):
+elementInstallation
+elementDefinition
+elementClass
+elementAttributes
+
+    # Long-Range
+    myBBLRlist=[]
+    for ip_nn in ip_names:
+        for identifier in (list(range(-numberOfLRPerIRSide,0))+list(range(1,numberOfLRPerIRSide+1))):
+            myBBLRlist.append({'label':'bb_lr', 'ip_name':ip_nn, 'beam':beam_name, 'other_beam':other_beam_name,
+                'identifier':identifier})
+
+    myBBLR=pd.DataFrame(myBBLRlist)[['beam','other_beam','ip_name','label','identifier']]
+    myBBLR['elementClass']='beambeam'
+    myBBLR['charge [ppb]']=0.
+    myBBLR['elementName']=myBBLR.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
+    myBBLR['other_elementName']=myBBLR.apply(
+            lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
+    myBBLR['elementClass']='beambeam'
+    myBBLR['elementAttributes']=lambda charge:'sigx = 0.1, '   + \
+                'sigy = 0.1, '   + \
+                'xma  = 1, '     + \
+                'yma  = 1, '     + \
+                f'charge := {charge}'
+    myBBLR['elementDefinition']=myBBLR.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['charge [ppb]']*0) ), axis=1)
+    # where circ is used
+    BBSpacing = circumference / harmonic_number * bunch_spacing_buckets / 2.
+    myBBLR['atPosition']=BBSpacing*myBBLR['identifier']
+    # assuming a sequence rotated in IR3
+    myBBLR['elementInstallation']=myBBLR.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
+
+    # Head-On
+    numberOfSliceOnSide=int((numberOfHOSlices-1)/2)
+    # to check: sigz of the luminous region
+    # where sigt is used
+    sigzLumi=sigt/2
+    z_centroids, z_cuts, N_part_per_slice = tp.constant_charge_slicing_gaussian(1,sigzLumi,numberOfHOSlices)
+    myBBHOlist=[]
+
+    for ip_nn in ip_names:
+        for identifier in (list(range(-numberOfSliceOnSide,0))+[0]+list(range(1,numberOfSliceOnSide+1))):
+            myBBHOlist.append({'label':'bb_ho', 'ip_name':ip_nn, 'other_beam':other_beam_name, 'beam':beam_name, 'identifier':identifier})
+
+    myBBHO=pd.DataFrame(myBBHOlist)[['beam','other_beam', 'ip_name','label','identifier']]
+    myBBHO['elementClass']='beambeam'
+    myBBHO['elementAttributes']=lambda charge:'sigx = 0.1, '   + \
+                'sigy = 0.1, '   + \
+                'xma  = 1, '     + \
+                'yma  = 1, '     + \
+                f'charge := {charge}'
+
+    myBBHO['charge [ppb]']=0
+    for ip_nn in ip_names:
+        myBBHO.loc[myBBHO['ip_name']==ip_nn, 'atPosition']=list(z_centroids)
+
+    myBBHO['elementName']=myBBHO.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
+    myBBHO['other_elementName']=myBBHO.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
+    myBBHO['elementDefinition']=myBBHO.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['charge [ppb]']*0) ), axis=1)
+    # assuming a sequence rotated in IR3
+    myBBHO['elementInstallation']=myBBHO.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
+
+    myBB=pd.concat([myBBHO, myBBLR],sort=False)
+    myBB = myBB.set_index('elementName', verify_integrity=True).sort_index()
+
+    return myBB
 def build_mad_instance_with_dummy_bb(sequences_file_name, bb_data_frames,
     beam_names, sequence_names,
     mad_echo=False, mad_warn=False, mad_info=False):
