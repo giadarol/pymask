@@ -967,7 +967,7 @@ if (not_a_mask==1){
 save, sequence=lhcb1, beam=true, file=lhcwbb_fortracking.seq;
 
 exec REMOVE_BB_LENS;
-
+beam;
 save, sequence=lhcb1, beam=true, file=lhc_without_bb_fortracking.seq;
 
 !stop;

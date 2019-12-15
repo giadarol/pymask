@@ -1,4 +1,8 @@
 import gc
+import pickle
+
+import numpy as np
+from scipy.constants import c as clight
 
 import bb_setup as bbs
 
@@ -13,9 +17,10 @@ harmonic_number = 35640
 bunch_spacing_buckets = 10
 numberOfLRPerIRSide = 21
 numberOfHOSlices = 11
-sigt = 0.0755
-bunch_charge_ppb = 1e11
-relativistic_beta = 0.999
+sigt = 0.075
+bunch_charge_ppb = 1.2e11
+relativisti_gamma=6927.628061781486
+relativistic_beta = np.sqrt(1 - 1.0 / relativistic_gamma ** 2)
 
 # Generate dataframes with names and location of the bb encounters (B1)
 bb_df_b1 = bbs.generate_set_of_bb_encounters_1beam(
@@ -53,9 +58,9 @@ bbs.get_geometry_and_optics_b1_b2(mad, bb_df_b1, bb_df_b2)
 # Get the position of the IPs in the surveys of the two beams
 ip_position_df = bbs.get_survey_ip_position_b1_b2(mad, ip_names)
 
-# Done with this madx model (we free some memory)
-del(mad)
-gc.collect()
+# # Done with this madx model (we free some memory)
+# del(mad)
+# gc.collect()
 
 # Get geometry and optics at the partner encounter
 bbs.get_partner_corrected_position_and_optics(
@@ -84,3 +89,14 @@ if generate_pysixtrack_lines:
     line_for_tracking_b1 = pysixtrack.Line.from_madx_sequence(
         mad_track_b1.sequence["lhcb1"]
     )
+
+    # Temporary fix due to bug in loader
+    cavities, _ = line_for_tracking_b1.get_elements_of_type(
+            pysixtrack.elements.Cavity)
+    for cc in cavities:
+        cc.frequency = harmonic_number*relativistic_beta*clight/circumference
+
+
+    with open("line_b1_from_mad.pkl", "wb") as fid:
+        pickle.dump(line_for_tracking_b1.to_dict(keepextra=True), fid)
+
