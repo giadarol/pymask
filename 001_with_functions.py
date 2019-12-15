@@ -86,15 +86,15 @@ if generate_pysixtrack_lines:
     # Build pysixtrack b1 model
     import pysixtrack
     line_for_tracking_b1 = pysixtrack.Line.from_madx_sequence(
-        mad_track_b1.sequence["lhcb1"]
-    )
+        mad_track_b1.sequence["lhcb1"])
+
+    bbs.setup_beam_beam_in_line(line_for_tracking_b1, bb_df_b1, bb_coupling=False)
 
     # Temporary fix due to bug in loader
     cavities, _ = line_for_tracking_b1.get_elements_of_type(
             pysixtrack.elements.Cavity)
     for cc in cavities:
         cc.frequency = harmonic_number*relativistic_beta*clight/circumference
-
 
     with open("line_b1_from_mad.pkl", "wb") as fid:
         pickle.dump(line_for_tracking_b1.to_dict(keepextra=True), fid)

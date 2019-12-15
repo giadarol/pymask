@@ -270,7 +270,7 @@ def setup_beam_beam_in_line(
     bb_df,
     bb_coupling=False,
 ):
-
+    import pysixtrack
     assert bb_coupling is False  # Not implemented
 
     for ee, eename in zip(line.elements, line.element_names):
