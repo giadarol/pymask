@@ -93,12 +93,12 @@ def generate_mad_bb_info(bb_df, mode='dummy', madx_reference_bunch_charge=1):
                     f'yma  = {yma}, '     + \
                     f'charge := on_bb_switch*{charge}, ' +\
                     'slot_id = %d'%({'bb_lr': 4, 'bb_ho': 6}[label]) # need to add 60 for central
-        bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.name, x.elementClass,
+        bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass,
             x.elementAttributes(np.sqrt(x['other_Sigma_11']),np.sqrt(x['other_Sigma_33']),
                 x['separation_x'], x['separation_y'],
                 x['other_charge_ppb']/madx_reference_bunch_charge, x['label'])),
             axis=1)
-        bb_df['elementInstallation']=bb_df.apply(lambda x: tp.elementInstallation(x.name, x.elementClass, x.atPosition, x.ip_name), axis=1)
+        bb_df['elementInstallation']=bb_df.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
     else:
         raise ValueError("mode must be 'dummy' or 'from_dataframe")
 
@@ -240,6 +240,7 @@ def get_counter_rotating(bb_df):
     c_bb_df['label'] = bb_df['label']
     c_bb_df['identifier'] = bb_df['identifier']
     c_bb_df['elementClass'] = bb_df['elementClass']
+    c_bb_df['elementName'] = bb_df['elementName']
     c_bb_df['elementAttributes'] = np.nan
     c_bb_df['self_charge_ppb'] = bb_df['self_charge_ppb']
     c_bb_df['other_charge_ppb'] = bb_df['other_charge_ppb']
@@ -282,7 +283,6 @@ def get_counter_rotating(bb_df):
     c_bb_df['dpx'] = bb_df['dpx'] * (-1.) * (-1.)
     c_bb_df['dpy'] = bb_df['dpy'] * (-1.)
 
-    c_bb_df['numberOfSlices']= bb_df['numberOfSlices']
     # Compute phi and alpha from dpx and dpy
     compute_local_crossing_angle_and_plane(c_bb_df)
 

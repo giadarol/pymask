@@ -8,9 +8,14 @@ from scipy.constants import c as clight
 import bb_setup as bbs
 
 generate_pysixtrack_lines = True
+generate_sixtrack_inputs = False
 
-sequence_fname = 'mad/lhc_without_bb.seq'
-sequence_for_tracking_fname = 'mad/lhc_without_bb_fortracking.seq'
+sequence_b1b2_for_optics_fname = 'mad/lhc_without_bb.seq'
+
+sequences_to_be_tracked = [
+        {'name': 'beam1_tuned', 'fname' : 'mad/lhc_without_bb_fortracking.seq', 'beam': 'b1', 'seqname':'lhcb1'},
+        {'name': 'beam4_tuned', 'fname' : 'mad/lhcb4_without_bb_fortracking.seq', 'beam': 'b2', 'seqname':'lhcb2'},
+       ]
 ip_names = ['ip1', 'ip2', 'ip5', 'ip8']
 numberOfLRPerIRSide = [21, 20, 21, 20]
 circumference = 26658.8832
@@ -41,12 +46,12 @@ bb_df_b2 = bbs.generate_set_of_bb_encounters_1beam(
     other_beam_name = 'b1')
 
 # Generate mad info
-bbs.generate_mad_bb_info(bb_df_b1)
-bbs.generate_mad_bb_info(bb_df_b2)
+bbs.generate_mad_bb_info(bb_df_b1, mode='dummy')
+bbs.generate_mad_bb_info(bb_df_b2, mode='dummy')
 
 # Install dummy bb lenses in mad sequences
 mad = bbs.build_mad_instance_with_bb(
-    sequences_file_name=sequence_fname,
+    sequences_file_name=sequence_b1b2_for_optics_fname,
     bb_data_frames=[bb_df_b1, bb_df_b2],
     beam_names=['b1', 'b2'],
     sequence_names=['lhcb1', 'lhcb2'],
@@ -72,34 +77,44 @@ for bb_df in [bb_df_b1, bb_df_b2]:
     bbs.compute_dpx_dpy(bb_df)
     bbs.compute_local_crossing_angle_and_plane(bb_df)
 
-# Get bb dataframe for beam 4
+# Get bb dataframe and mad model (with dummy bb) for beam 4
 bb_df_b4 = bbs.get_counter_rotating(bb_df_b2)
-
-# Mad model of the machine to be tracked (bb is still dummy)
-mad_track_b1 = bbs.build_mad_instance_with_bb(
-    sequences_file_name=sequence_for_tracking_fname,
-    bb_data_frames=[bb_df_b1],
-    beam_names=['b1'],
-    sequence_names=['lhcb1'],
-    mad_echo=False, mad_warn=False, mad_info=False)
-
-if generate_pysixtrack_lines:
-    # Build pysixtrack b1 model
-    import pysixtrack
-    line_for_tracking_b1 = pysixtrack.Line.from_madx_sequence(
-        mad_track_b1.sequence["lhcb1"])
-
-    bbs.setup_beam_beam_in_line(line_for_tracking_b1, bb_df_b1, bb_coupling=False)
-
-    # Temporary fix due to bug in loader
-    cavities, _ = line_for_tracking_b1.get_elements_of_type(
-            pysixtrack.elements.Cavity)
-    for cc in cavities:
-        cc.frequency = harmonic_number*relativistic_beta*clight/circumference
-
-    with open("line_b1_from_mad.pkl", "wb") as fid:
-        pickle.dump(line_for_tracking_b1.to_dict(keepextra=True), fid)
+bbs.generate_mad_bb_info(bb_df_b4, mode='dummy')
 
 
+# Mad model of the machines to be tracked (bb is still dummy)
+for ss in sequences_to_be_tracked:
+
+    bb_df = {'b1': bb_df_b1, 'b4':bb_df_b4}[ss['beam']]
+
+    mad_track = bbs.build_mad_instance_with_bb(
+        sequences_file_name=ss['fname'],
+        bb_data_frames=[bb_df],
+        beam_names=[ss['beam']],
+        sequence_names=[ss['seqname']],
+        mad_echo=False, mad_warn=False, mad_info=False)
+
+    if generate_pysixtrack_lines:
+        # Build pysixtrack model
+        import pysixtrack
+        line_for_tracking = pysixtrack.Line.from_madx_sequence(
+            mad_track.sequence[ss['seqname']])
+
+        bbs.setup_beam_beam_in_line(line_for_tracking, bb_df, bb_coupling=False)
+
+        # Temporary fix due to bug in loader
+        cavities, _ = line_for_tracking.get_elements_of_type(
+                pysixtrack.elements.Cavity)
+        for cc in cavities:
+            cc.frequency = harmonic_number*relativistic_beta*clight/circumference
+
+        with open(f"line_{ss['name']}_from_mad.pkl", "wb") as fid:
+            pickle.dump(line_for_tracking.to_dict(keepextra=True), fid)
+
+    if generate_sixtrack_inputs:
+        raise ValueError('Coming soon :-)')
+
+    del(mad_track)
+    gc.collect()
 
 # %%
