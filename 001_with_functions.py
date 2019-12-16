@@ -10,6 +10,8 @@ import bb_setup as bbs
 generate_pysixtrack_lines = True
 generate_sixtrack_inputs = False
 
+closed_orbit_to_pysixtrack_from_mad = True
+
 sequence_b1b2_for_optics_fname = 'mad/lhc_without_bb.seq'
 
 sequences_to_be_tracked = [
@@ -24,6 +26,7 @@ bunch_spacing_buckets = 10
 numberOfHOSlices = 11
 sigt = 0.075
 bunch_charge_ppb = 1.2e11
+madx_reference_bunch_charge = bunch_charge_ppb
 relativistic_gamma=6927.628061781486
 relativistic_beta = np.sqrt(1 - 1.0 / relativistic_gamma ** 2)
 
@@ -81,6 +84,10 @@ for bb_df in [bb_df_b1, bb_df_b2]:
 bb_df_b4 = bbs.get_counter_rotating(bb_df_b2)
 bbs.generate_mad_bb_info(bb_df_b4, mode='dummy')
 
+# Generate mad info
+bbs.generate_mad_bb_info(bb_df_b1, mode='from_dataframe', madx_reference_bunch_charge=madx_reference_bunch_charge)
+bbs.generate_mad_bb_info(bb_df_b2, mode='from_dataframe', madx_reference_bunch_charge=madx_reference_bunch_charge)
+bbs.generate_mad_bb_info(bb_df_b4, mode='from_dataframe', madx_reference_bunch_charge=madx_reference_bunch_charge)
 
 # Mad model of the machines to be tracked (bb is still dummy)
 for ss in sequences_to_be_tracked:
@@ -93,6 +100,30 @@ for ss in sequences_to_be_tracked:
         beam_names=[ss['beam']],
         sequence_names=[ss['seqname']],
         mad_echo=False, mad_warn=False, mad_info=False)
+
+    # disable bb in mad model
+    mad_track.globals.on_bb_switch = 0
+
+    # Twiss and get closed-orbit
+    mad_track.use(sequence=ss['seqname'])
+    twiss_table = mad_track.twiss()
+
+    beta0 = mad_track.sequence[ss['seqname']].beam.beta
+    gamma0 = mad_track.sequence[ss['seqname']].beam.gamma
+    p0c_eV = mad_track.sequence[ss['seqname']].beam.pc*1.e9
+
+    x_CO  = twiss_table.x[0]
+    px_CO = twiss_table.px[0]
+    y_CO  = twiss_table.y[0]
+    py_CO = twiss_table.py[0]
+    t_CO  = twiss_table.t[0]
+    pt_CO = twiss_table.pt[0]
+    #convert tau, pt to sigma,delta
+    sigma_CO = beta0 * t_CO
+    delta_CO = ((pt_CO**2 + 2*pt_CO/beta0) + 1)**0.5 - 1
+
+    mad_CO = np.array([x_CO, px_CO, y_CO, py_CO, sigma_CO, delta_CO])
+
 
     if generate_pysixtrack_lines:
         # Build pysixtrack model
@@ -108,13 +139,21 @@ for ss in sequences_to_be_tracked:
         for cc in cavities:
             cc.frequency = harmonic_number*relativistic_beta*clight/circumference
 
+        line_for_tracking.disable_beambeam()
+        part_on_CO = line_for_tracking.find_closed_orbit(
+            guess=mad_CO, p0c=p0c_eV,
+            method={True: 'get_guess', False: 'Nelder-Mead'}[closed_orbit_to_pysixtrack_from_mad])
+        line_for_tracking.enable_beambeam()
+
         with open(f"line_{ss['name']}_from_mad.pkl", "wb") as fid:
-            pickle.dump(line_for_tracking.to_dict(keepextra=True), fid)
+            linedct = line_for_tracking.to_dict(keepextra=True)
+            linedct['part_on_closed_orbit'] = part_on_CO
+            pickle.dump(linedct, fid)
 
     if generate_sixtrack_inputs:
         raise ValueError('Coming soon :-)')
 
-    del(mad_track)
-    gc.collect()
+    # del(mad_track)
+    # gc.collect()
 
 # %%
