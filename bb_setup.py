@@ -33,6 +33,7 @@ def generate_set_of_bb_encounters_1beam(
                 'identifier':identifier})
 
     myBBLR=pd.DataFrame(myBBLRlist)[['beam','other_beam','ip_name','label','identifier']]
+
     myBBLR['self_charge_ppb'] = bunch_charge_ppb
     myBBLR['self_relativistic_beta'] = relativistic_beta
     myBBLR['elementName']=myBBLR.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
@@ -57,6 +58,7 @@ def generate_set_of_bb_encounters_1beam(
 
     myBBHO=pd.DataFrame(myBBHOlist)[['beam','other_beam', 'ip_name','label','identifier']]
 
+
     myBBHO['self_charge_ppb'] = bunch_charge_ppb/numberOfHOSlices
     myBBHO['self_relativistic_beta'] = relativistic_beta
     for ip_nn in ip_names:
@@ -71,7 +73,7 @@ def generate_set_of_bb_encounters_1beam(
 
     return myBB
 
-def generate_mad_bb_info(bb_df, mode='dummy'):
+def generate_mad_bb_info(bb_df, mode='dummy', madx_reference_bunch_charge=1):
 
     if mode == 'dummy':
         bb_df['elementClass']='beambeam'
@@ -84,7 +86,19 @@ def generate_mad_bb_info(bb_df, mode='dummy'):
         bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['self_charge_ppb'], x['label'])), axis=1)
         bb_df['elementInstallation']=bb_df.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
     elif mode=='from_dataframe':
-        raise ValueError('Not yet implemented!')
+        bb_df['elementClass']='beambeam'
+        bb_df['elementAttributes']=lambda sigx, sigy, xma, yma, charge, label:f'sigx = {sigx}, '   + \
+                    f'sigy = {sigy}, '   + \
+                    f'xma  = {xma}, '     + \
+                    f'yma  = {yma}, '     + \
+                    f'charge := on_bb_switch*{charge}, ' +\
+                    'slot_id = %d'%({'bb_lr': 4, 'bb_ho': 6}[label]) # need to add 60 for central
+        bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.name, x.elementClass,
+            x.elementAttributes(np.sqrt(x['other_Sigma_11']),np.sqrt(x['other_Sigma_33']),
+                x['separation_x'], x['separation_y'],
+                x['other_charge_ppb']/madx_reference_bunch_charge, x['label'])),
+            axis=1)
+        bb_df['elementInstallation']=bb_df.apply(lambda x: tp.elementInstallation(x.name, x.elementClass, x.atPosition, x.ip_name), axis=1)
     else:
         raise ValueError("mode must be 'dummy' or 'from_dataframe")
 
@@ -228,6 +242,7 @@ def get_counter_rotating(bb_df):
     c_bb_df['elementClass'] = bb_df['elementClass']
     c_bb_df['elementAttributes'] = np.nan
     c_bb_df['self_charge_ppb'] = bb_df['self_charge_ppb']
+    c_bb_df['other_charge_ppb'] = bb_df['other_charge_ppb']
     c_bb_df['other_elementName'] = bb_df['other_elementName']
 
     c_bb_df['atPosition'] = bb_df['atPosition'] * (-1.)
@@ -260,12 +275,14 @@ def get_counter_rotating(bb_df):
     c_bb_df['other_Sigma_34'] = bb_df['other_Sigma_34'] * (-1.)
     c_bb_df['other_Sigma_44'] = bb_df['other_Sigma_44'] * (-1.) * (-1.)
 
+    c_bb_df['other_relativistic_beta']=bb_df['other_relativistic_beta']
     c_bb_df['separation_x'] = bb_df['separation_x'] * (-1.)
     c_bb_df['separation_y'] = bb_df['separation_y']
 
     c_bb_df['dpx'] = bb_df['dpx'] * (-1.) * (-1.)
     c_bb_df['dpy'] = bb_df['dpy'] * (-1.)
 
+    c_bb_df['numberOfSlices']= bb_df['numberOfSlices']
     # Compute phi and alpha from dpx and dpy
     compute_local_crossing_angle_and_plane(c_bb_df)
 

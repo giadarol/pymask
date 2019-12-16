@@ -10,7 +10,7 @@ import bb_setup as bbs
 generate_pysixtrack_lines = True
 
 sequence_fname = 'mad/lhc_without_bb.seq'
-sequence_for_tracking_fname = 'mad/lhc_without_bb_fortracking.seq'
+sequence_for_tracking_fname = 'mad/lhcb4_without_bb_fortracking.seq'
 ip_names = ['ip1', 'ip2', 'ip5', 'ip8']
 numberOfLRPerIRSide = [21, 20, 21, 20]
 circumference = 26658.8832
@@ -75,30 +75,36 @@ for bb_df in [bb_df_b1, bb_df_b2]:
 # Get bb dataframe for beam 4
 bb_df_b4 = bbs.get_counter_rotating(bb_df_b2)
 
+
+bbs.generate_mad_bb_info(bb_df_b4, mode='from_dataframe')
+
+
 # Mad model of the machine to be tracked (bb is still dummy)
-mad_track_b1 = bbs.build_mad_instance_with_bb(
+mad_track_b4 = bbs.build_mad_instance_with_bb(
     sequences_file_name=sequence_for_tracking_fname,
-    bb_data_frames=[bb_df_b1],
-    beam_names=['b1'],
-    sequence_names=['lhcb1'],
+    bb_data_frames=[bb_df_b4],
+    beam_names=['b2'],
+    sequence_names=['lhcb2'],
     mad_echo=False, mad_warn=False, mad_info=False)
 
-if generate_pysixtrack_lines:
-    # Build pysixtrack b1 model
-    import pysixtrack
-    line_for_tracking_b1 = pysixtrack.Line.from_madx_sequence(
-        mad_track_b1.sequence["lhcb1"])
 
-    bbs.setup_beam_beam_in_line(line_for_tracking_b1, bb_df_b1, bb_coupling=False)
+
+if generate_pysixtrack_lines:
+    # Build pysixtrack b4 model
+    import pysixtrack
+    line_for_tracking_b4  = pysixtrack.Line.from_madx_sequence(
+        mad_track_b4.sequence["lhcb2"])
+
+    bbs.setup_beam_beam_in_line(line_for_tracking_b4, bb_df_b4, bb_coupling=False)
 
     # Temporary fix due to bug in loader
-    cavities, _ = line_for_tracking_b1.get_elements_of_type(
+    cavities, _ = line_for_tracking_b4.get_elements_of_type(
             pysixtrack.elements.Cavity)
     for cc in cavities:
         cc.frequency = harmonic_number*relativistic_beta*clight/circumference
 
-    with open("line_b1_from_mad.pkl", "wb") as fid:
-        pickle.dump(line_for_tracking_b1.to_dict(keepextra=True), fid)
+    with open("line_b4_from_mad.pkl", "wb") as fid:
+        pickle.dump(line_for_tracking_b4.to_dict(keepextra=True), fid)
 
 
 

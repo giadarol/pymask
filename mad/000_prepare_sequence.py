@@ -13,7 +13,7 @@ sixtrack_input_folder = '../sixtrack_b4'
 mylhcbeam = 4
 on_bb_switch = 0
 
-os.system("gfortran headonslice.f -o headonslice")
+# os.system("gfortran headonslice.f -o headonslice")
 
 mad = Madx()
 mad.globals.mylhcbeam = mylhcbeam
