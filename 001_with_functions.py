@@ -85,7 +85,7 @@ bbs.generate_mad_bb_info(bb_df_b4, mode='dummy')
 # Mad model of the machines to be tracked (bb is still dummy)
 for ss in sequences_to_be_tracked:
 
-    bb_df = {'b1': bb_df_b1, 'b4':bb_df_b4}[ss['beam']]
+    bb_df = {'b1': bb_df_b1, 'b2':bb_df_b4}[ss['beam']]
 
     mad_track = bbs.build_mad_instance_with_bb(
         sequences_file_name=ss['fname'],
