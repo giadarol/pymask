@@ -71,17 +71,22 @@ def generate_set_of_bb_encounters_1beam(
 
     return myBB
 
-def generate_mad_bb_info(bb_df):
+def generate_mad_bb_info(bb_df, mode='dummy'):
 
-    bb_df['elementClass']='beambeam'
-    bb_df['elementAttributes']=lambda charge, label:'sigx = 0.1, '   + \
-                'sigy = 0.1, '   + \
-                'xma  = 1, '     + \
-                'yma  = 1, '     + \
-                f'charge = 0*{charge}, ' +\
-                'slot_id = %d'%({'bb_lr': 4, 'bb_ho': 6}[label]) # need to add 60 for central
-    bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['self_charge_ppb'], x['label'])), axis=1)
-    bb_df['elementInstallation']=bb_df.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
+    if mode == 'dummy':
+        bb_df['elementClass']='beambeam'
+        bb_df['elementAttributes']=lambda charge, label:'sigx = 0.1, '   + \
+                    'sigy = 0.1, '   + \
+                    'xma  = 1, '     + \
+                    'yma  = 1, '     + \
+                    f'charge = 0*{charge}, ' +\
+                    'slot_id = %d'%({'bb_lr': 4, 'bb_ho': 6}[label]) # need to add 60 for central
+        bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['self_charge_ppb'], x['label'])), axis=1)
+        bb_df['elementInstallation']=bb_df.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
+    elif mode=='from_dataframe':
+        raise ValueError('Not yet implemented!')
+    else:
+        raise ValueError("mode must be 'dummy' or 'from_dataframe")
 
     return bb_df
 
@@ -233,16 +238,16 @@ def get_counter_rotating(bb_df):
     c_bb_df['self_lab_position'] = np.nan
     c_bb_df['other_lab_position'] = np.nan
 
-    c_bb_df['self_Sigma_11'] = bb_df['self_Sigma_11'] * (-1.) * (-1.)
-    c_bb_df['self_Sigma_12'] = bb_df['self_Sigma_12'] * (-1.) * (-1.) * (-1.)
-    c_bb_df['self_Sigma_13'] = bb_df['self_Sigma_13'] * (-1.)
-    c_bb_df['self_Sigma_14'] = bb_df['self_Sigma_14'] * (-1.) * (-1.)
-    c_bb_df['self_Sigma_22'] = bb_df['self_Sigma_22'] * (-1.) * (-1.) * (-1.) * (-1.)
-    c_bb_df['self_Sigma_23'] = bb_df['self_Sigma_23'] * (-1.) * (-1.)
-    c_bb_df['self_Sigma_24'] = bb_df['self_Sigma_24'] * (-1.) * (-1.) * (-1.)
-    c_bb_df['self_Sigma_33'] = bb_df['self_Sigma_33']
-    c_bb_df['self_Sigma_34'] = bb_df['self_Sigma_34'] * (-1.)
-    c_bb_df['self_Sigma_44'] = bb_df['self_Sigma_44'] * (-1.) * (-1.)
+    c_bb_df['self_Sigma_11'] = bb_df['self_Sigma_11'] * (-1.) * (-1.)                  # x * x
+    c_bb_df['self_Sigma_12'] = bb_df['self_Sigma_12'] * (-1.) * (-1.) * (-1.)          # x * dx / ds
+    c_bb_df['self_Sigma_13'] = bb_df['self_Sigma_13'] * (-1.)                          # x * y
+    c_bb_df['self_Sigma_14'] = bb_df['self_Sigma_14'] * (-1.) * (-1.)                  # x * dy / ds
+    c_bb_df['self_Sigma_22'] = bb_df['self_Sigma_22'] * (-1.) * (-1.) * (-1.) * (-1.)  # dx / ds * dx / ds
+    c_bb_df['self_Sigma_23'] = bb_df['self_Sigma_23'] * (-1.) * (-1.)                  # dx / ds * y
+    c_bb_df['self_Sigma_24'] = bb_df['self_Sigma_24'] * (-1.) * (-1.) * (-1.)          # dx / ds * dy / ds
+    c_bb_df['self_Sigma_33'] = bb_df['self_Sigma_33']                                  # y * y
+    c_bb_df['self_Sigma_34'] = bb_df['self_Sigma_34'] * (-1.)                          # y * dy / ds
+    c_bb_df['self_Sigma_44'] = bb_df['self_Sigma_44'] * (-1.) * (-1.)                  # dy / ds * dy / ds
 
     c_bb_df['other_Sigma_11'] = bb_df['other_Sigma_11'] * (-1.) * (-1.)
     c_bb_df['other_Sigma_12'] = bb_df['other_Sigma_12'] * (-1.) * (-1.) * (-1.)
