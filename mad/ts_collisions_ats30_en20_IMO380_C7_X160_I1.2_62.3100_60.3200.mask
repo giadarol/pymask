@@ -92,7 +92,8 @@ seqedit,sequence=lhcb2;flatten;cycle,start=IP3;flatten;endedit;
 NRJ= 6500.0 ; ! collision
 
 ! A Laundau octupole current 20A inj, 550A col
-I_MO=380;
+! I_MO=380;
+I_MO=0;
 
 !General switch to select collision (0/1)
 ON_COLLISION:=1;
@@ -151,7 +152,7 @@ call, file="opticsfile.22_ctpps2"; ! 2018/25cm thick
 
 on_alice:=7000/nrj; on_lhcb:=+7000/nrj;
 !qx0 = 62.313;   qy0 = 60.317;  qprime = 15.0;
-qx0 = 62.3100;   qy0 = 60.3200;  qprime = 7.0;
+qx0 = 62.3100;   qy0 = 60.3200;  qprime = 0;
 Beam,particle=proton,sequence=lhcb1,energy=6500.0,NPART=1.2E11,
      sige=1.1e-4,sigt=0.075,ex=epsx,ey=epsy;
 Beam,particle=proton,sequence=lhcb2,energy=6500.0,bv = bvaux,NPART=1.2E11,

@@ -18,15 +18,17 @@ sequences_to_be_tracked = [
         {'name': 'beam1_tuned', 'fname' : 'mad/lhc_without_bb_fortracking.seq', 'beam': 'b1', 'seqname':'lhcb1'},
         {'name': 'beam4_tuned', 'fname' : 'mad/lhcb4_without_bb_fortracking.seq', 'beam': 'b2', 'seqname':'lhcb2'},
        ]
-ip_names = ['ip1', 'ip2', 'ip5', 'ip8']
-numberOfLRPerIRSide = [21, 20, 21, 20]
+#ip_names = ['ip1', 'ip2', 'ip5', 'ip8']
+#numberOfLRPerIRSide = [21, 20, 21, 20]
+ip_names = ['ip1', 'ip5']
+numberOfLRPerIRSide = [21, 21]
 circumference = 26658.8832
 harmonic_number = 35640
 bunch_spacing_buckets = 10
 numberOfHOSlices = 11
 sigt = 0.075
-bunch_charge_ppb = 1.2e11
-madx_reference_bunch_charge = bunch_charge_ppb
+bunch_charge_ppb = 0. #1.2e11
+madx_reference_bunch_charge = 1.2e11
 relativistic_gamma=6927.628061781486
 relativistic_beta = np.sqrt(1 - 1.0 / relativistic_gamma ** 2)
 
@@ -89,7 +91,7 @@ bbs.generate_mad_bb_info(bb_df_b1, mode='from_dataframe', madx_reference_bunch_c
 bbs.generate_mad_bb_info(bb_df_b2, mode='from_dataframe', madx_reference_bunch_charge=madx_reference_bunch_charge)
 bbs.generate_mad_bb_info(bb_df_b4, mode='from_dataframe', madx_reference_bunch_charge=madx_reference_bunch_charge)
 
-# Mad model of the machines to be tracked (bb is still dummy)
+# Mad model of the machines to be tracked
 for ss in sequences_to_be_tracked:
 
     bb_df = {'b1': bb_df_b1, 'b2':bb_df_b4}[ss['beam']]
@@ -147,7 +149,7 @@ for ss in sequences_to_be_tracked:
 
         with open(f"line_{ss['name']}_from_mad.pkl", "wb") as fid:
             linedct = line_for_tracking.to_dict(keepextra=True)
-            linedct['part_on_closed_orbit'] = part_on_CO
+            linedct['particle_on_closed_orbit'] = part_on_CO.to_dict()
             pickle.dump(linedct, fid)
 
     if generate_sixtrack_inputs:
