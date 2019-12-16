@@ -16,18 +16,18 @@ sequence_b1b2_for_optics_fname = 'mad/lhc_without_bb.seq'
 
 sequences_to_be_tracked = [
         {'name': 'beam1_tuned', 'fname' : 'mad/lhc_without_bb_fortracking.seq', 'beam': 'b1', 'seqname':'lhcb1'},
-        {'name': 'beam4_tuned', 'fname' : 'mad/lhcb4_without_bb_fortracking.seq', 'beam': 'b2', 'seqname':'lhcb2'},
+        #{'name': 'beam4_tuned', 'fname' : 'mad/lhcb4_without_bb_fortracking.seq', 'beam': 'b2', 'seqname':'lhcb2'},
        ]
 #ip_names = ['ip1', 'ip2', 'ip5', 'ip8']
 #numberOfLRPerIRSide = [21, 20, 21, 20]
 ip_names = ['ip1', 'ip5']
-numberOfLRPerIRSide = [21, 21]
+numberOfLRPerIRSide = [0,0]
 circumference = 26658.8832
 harmonic_number = 35640
 bunch_spacing_buckets = 10
 numberOfHOSlices = 11
 sigt = 0.075
-bunch_charge_ppb = 0. #1.2e11
+bunch_charge_ppb = 1.2e11
 madx_reference_bunch_charge = 1.2e11
 relativistic_gamma=6927.628061781486
 relativistic_beta = np.sqrt(1 - 1.0 / relativistic_gamma ** 2)
@@ -126,6 +126,9 @@ for ss in sequences_to_be_tracked:
 
     mad_CO = np.array([x_CO, px_CO, y_CO, py_CO, sigma_CO, delta_CO])
 
+    optics_at_start_ring = {
+            'betx': twiss_table.betx[0],
+            'bety': twiss_table.betx[0]}
 
     if generate_pysixtrack_lines:
         # Build pysixtrack model
@@ -150,6 +153,7 @@ for ss in sequences_to_be_tracked:
         with open(f"line_{ss['name']}_from_mad.pkl", "wb") as fid:
             linedct = line_for_tracking.to_dict(keepextra=True)
             linedct['particle_on_closed_orbit'] = part_on_CO.to_dict()
+            linedct['optics_at_start_ring'] = optics_at_start_ring
             pickle.dump(linedct, fid)
 
     if generate_sixtrack_inputs:

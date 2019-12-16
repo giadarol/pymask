@@ -32,17 +32,20 @@ def generate_set_of_bb_encounters_1beam(
             myBBLRlist.append({'label':'bb_lr', 'ip_name':ip_nn, 'beam':beam_name, 'other_beam':other_beam_name,
                 'identifier':identifier})
 
-    myBBLR=pd.DataFrame(myBBLRlist)[['beam','other_beam','ip_name','label','identifier']]
+    if len(myBBLRlist)>0:
+        myBBLR=pd.DataFrame(myBBLRlist)[['beam','other_beam','ip_name','label','identifier']]
 
-    myBBLR['self_charge_ppb'] = bunch_charge_ppb
-    myBBLR['self_relativistic_beta'] = relativistic_beta
-    myBBLR['elementName']=myBBLR.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
-    myBBLR['other_elementName']=myBBLR.apply(
-            lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
-    # where circ is used
-    BBSpacing = circumference / harmonic_number * bunch_spacing_buckets / 2.
-    myBBLR['atPosition']=BBSpacing*myBBLR['identifier']
-    # assuming a sequence rotated in IR3
+        myBBLR['self_charge_ppb'] = bunch_charge_ppb
+        myBBLR['self_relativistic_beta'] = relativistic_beta
+        myBBLR['elementName']=myBBLR.apply(lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
+        myBBLR['other_elementName']=myBBLR.apply(
+                lambda x: tp.elementName(x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
+        # where circ is used
+        BBSpacing = circumference / harmonic_number * bunch_spacing_buckets / 2.
+        myBBLR['atPosition']=BBSpacing*myBBLR['identifier']
+        # assuming a sequence rotated in IR3
+    else:
+        myBBLR = pd.DataFrame()
 
     # Head-On
     numberOfSliceOnSide=int((numberOfHOSlices-1)/2)
