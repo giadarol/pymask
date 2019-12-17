@@ -7,8 +7,8 @@ import footprint
 import matplotlib.pyplot as plt
 
 track_with = 'PySixtrack'
-track_with = 'Sixtrack'
-#track_with = 'Sixtracklib'
+#track_with = 'Sixtrack'
+track_with = 'Sixtracklib'
 #device = 'opencl:1.0'
 device = None
 

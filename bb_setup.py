@@ -80,24 +80,24 @@ def generate_mad_bb_info(bb_df, mode='dummy', madx_reference_bunch_charge=1):
 
     if mode == 'dummy':
         bb_df['elementClass']='beambeam'
-        bb_df['elementAttributes']=lambda charge, label:'sigx = 0.1, '   + \
+        eattributes = lambda charge, label:'sigx = 0.1, '   + \
                     'sigy = 0.1, '   + \
                     'xma  = 1, '     + \
                     'yma  = 1, '     + \
                     f'charge = 0*{charge}, ' +\
                     'slot_id = %d'%({'bb_lr': 4, 'bb_ho': 6}[label]) # need to add 60 for central
-        bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, x.elementAttributes(x['self_charge_ppb'], x['label'])), axis=1)
+        bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass, eattributes(x['self_charge_ppb'], x['label'])), axis=1)
         bb_df['elementInstallation']=bb_df.apply(lambda x: tp.elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
     elif mode=='from_dataframe':
         bb_df['elementClass']='beambeam'
-        bb_df['elementAttributes']=lambda sigx, sigy, xma, yma, charge, label:f'sigx = {sigx}, '   + \
+        eattributes = lambda sigx, sigy, xma, yma, charge, label:f'sigx = {sigx}, '   + \
                     f'sigy = {sigy}, '   + \
                     f'xma  = {xma}, '     + \
                     f'yma  = {yma}, '     + \
                     f'charge := on_bb_switch*{charge}, ' +\
                     'slot_id = %d'%({'bb_lr': 4, 'bb_ho': 6}[label]) # need to add 60 for central
         bb_df['elementDefinition']=bb_df.apply(lambda x: tp.elementDefinition(x.elementName, x.elementClass,
-            x.elementAttributes(np.sqrt(x['other_Sigma_11']),np.sqrt(x['other_Sigma_33']),
+            eattributes(np.sqrt(x['other_Sigma_11']),np.sqrt(x['other_Sigma_33']),
                 x['separation_x'], x['separation_y'],
                 x['other_charge_ppb']/madx_reference_bunch_charge, x['label'])),
             axis=1)
@@ -244,7 +244,6 @@ def get_counter_rotating(bb_df):
     c_bb_df['identifier'] = bb_df['identifier']
     c_bb_df['elementClass'] = bb_df['elementClass']
     c_bb_df['elementName'] = bb_df['elementName']
-    c_bb_df['elementAttributes'] = np.nan
     c_bb_df['self_charge_ppb'] = bb_df['self_charge_ppb']
     c_bb_df['other_charge_ppb'] = bb_df['other_charge_ppb']
     c_bb_df['other_elementName'] = bb_df['other_elementName']
