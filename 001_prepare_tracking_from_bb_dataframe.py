@@ -6,7 +6,7 @@ import numpy as np
 from scipy.constants import c as clight
 
 import bb_setup as bbs
-
+import os
 
 bb_data_frames_fname = 'bb_dataframes.pkl'
 
@@ -16,6 +16,14 @@ generate_sixtrack_inputs = True
 closed_orbit_to_pysixtrack_from_mad = True
 
 reference_bunch_charge_sixtrack_ppb = 1.2e11
+emitnx_sixtrack_um = 2.
+emitny_sixtrack_um = 2.
+sigz_sixtrack_m = 0.075
+sige_sixtrack = 0.00011
+ibeco_sixtrack = 1
+ibtyp_sixtrack = 0
+lhc_sixtrack = 2
+ibbc_sixtrack = 0
 
 sequences_to_be_tracked = [
         {'name': 'beam1_tuned', 'fname' : 'mad/lhc_without_bb_fortracking.seq', 'beam': 'b1', 'seqname':'lhcb1', 'bb_df':'bb_df_b1'},
@@ -103,7 +111,7 @@ for ss in sequences_to_be_tracked:
 
     if generate_sixtrack_inputs:
         six_fol_name = f"sixtrack_input_{ss['name']}"
-#        os.mkdir(sixfolname)
+        os.mkdir(six_fol_name)
 
         # http://sixtrack.web.cern.ch/SixTrack/docs/user_full/manual.php#Ch6.S6
 
@@ -122,15 +130,16 @@ for ss in sequences_to_be_tracked:
                 f"{x['h-sep [mm]']}",
                 f"{x['v-sep [mm]']}",
                 f"{x['strength-ratio']}",
-                f"{x['4dSxy [mm*mm]']}"
+                # f"{x['4dSxy [mm*mm]']}" Not really used
                 ]), axis=1)
-
 
 
         sxt_df_6d = bb_df[bb_df['label']=='bb_ho'].copy()
         sxt_df_6d['h-sep [mm]'] = -sxt_df_6d['separation_x']*1e3
         sxt_df_6d['v-sep [mm]'] = -sxt_df_6d['separation_y']*1e3
-        sxt_df_6d['strength'] = sxt_df_6d['other_charge_ppb']/reference_bunch_charge_sixtrack_ppb
+        sxt_df_6d['phi [rad]'] = sxt_df_6d['phi']
+        sxt_df_6d['alpha [rad]'] = sxt_df_6d['alpha']
+        sxt_df_6d['strength-ratio'] = sxt_df_6d['other_charge_ppb']/reference_bunch_charge_sixtrack_ppb
         sxt_df_6d['Sxx [mm*mm]'] = sxt_df_6d['other_Sigma_11'] *1e6
         sxt_df_6d['Sxxp [mm*mrad]'] = sxt_df_6d['other_Sigma_12'] *1e6
         sxt_df_6d['Sxpxp [mrad*mrad]'] = sxt_df_6d['other_Sigma_22'] *1e6
@@ -141,8 +150,50 @@ for ss in sequences_to_be_tracked:
         sxt_df_6d['Sxyp [mm*mrad]'] = sxt_df_6d['other_Sigma_14'] *1e6
         sxt_df_6d['Sxpy [mrad*mm]'] = sxt_df_6d['other_Sigma_23'] *1e6
         sxt_df_6d['Sxpyp [mrad*mrad]'] = sxt_df_6d['other_Sigma_24'] *1e6
-        #with(sixfolname + 'fc.3', 'wb'):
+        sxt_df_6d['fort3entry'] = sxt_df_6d.apply(lambda x: ' '.join([
+                f"{x.elementName}",
+                '1',
+                f"{x['phi [rad]']}",
+                f"{x['alpha [rad]']}",
+                f"{x['h-sep [mm]']}",
+                f"{x['v-sep [mm]']}",
+                '\n'
+                f"{x['Sxx [mm*mm]']}",
+                f"{x['Sxxp [mm*mrad]']}",
+                f"{x['Sxpxp [mrad*mrad]']}",
+                f"{x['Syy [mm*mm]']}",
+                f"{x['Syyp [mm*mrad]']}",
+                '\n',
+                f"{x['Sypyp [mrad*mrad]']}",
+                f"{x['Sxy [mm*mm]']}",
+                f"{x['Sxyp [mm*mrad]']}",
+                f"{x['Sxpy [mrad*mm]']}",
+                f"{x['Sxpyp [mrad*mrad]']}",
+                f"{x['strength-ratio']}",
+                ]), axis=1)
 
+        f3_common_settings = ' '.join([
+                f"{reference_bunch_charge_sixtrack_ppb}",
+                f"{emitnx_sixtrack_um}",
+                f"{emitny_sixtrack_um}",
+                f"{sigz_sixtrack_m}",
+                f"{sige_sixtrack}",
+                f"{ibeco_sixtrack}",
+                f"{ibtyp_sixtrack}",
+                f"{lhc_sixtrack}",
+                f"{ibbc_sixtrack}",
+                ])
+
+        f3_string = '\n'.join([
+            'BEAM',
+            'EXPERT',
+            f3_common_settings]
+            + list(sxt_df_6d['fort3entry'].values)
+            + list(sxt_df_4d['fort3entry'].values)
+            + ['NEXT'])
+
+        with open(six_fol_name + '/fc.3', 'w') as fid:
+            fid.write(f3_string)
 
 
     # del(mad_track)
