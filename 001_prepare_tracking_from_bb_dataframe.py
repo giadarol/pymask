@@ -24,6 +24,7 @@ ibeco_sixtrack = 1
 ibtyp_sixtrack = 0
 lhc_sixtrack = 2
 ibbc_sixtrack = 0
+radius_sixtrack_multip_conversion_mad = 0.017
 
 sequences_to_be_tracked = [
         {'name': 'beam1_tuned', 'fname' : 'mad/lhc_without_bb_fortracking.seq', 'beam': 'b1', 'seqname':'lhcb1', 'bb_df':'bb_df_b1'},
@@ -37,6 +38,11 @@ with open(bb_data_frames_fname, 'rb') as fid:
 for ss in sequences_to_be_tracked:
 
     bb_df =  bb_df_dict[ss['bb_df']]
+
+    outp_folder = 'pymask_output_' + ss['name']
+    mad_fol_name = outp_folder + '/mad'
+    os.makedirs(mad_fol_name, exist_ok=True)
+    bb_df.to_pickle(outp_folder+'/bb_df.pkl')
 
     mad_track = bbs.build_mad_instance_with_bb(
         sequences_file_name=ss['fname'],
@@ -72,7 +78,12 @@ for ss in sequences_to_be_tracked:
             'betx': twiss_table.betx[0],
             'bety': twiss_table.betx[0]}
 
+    mad_track.input(f"save, sequence={ss['seqname']}, beam=true, file={mad_fol_name}/sequence_w_bb.seq")
+
     if generate_pysixtrack_lines:
+        pysix_fol_name = outp_folder + "/pysixtrack"
+        os.makedirs(pysix_fol_name, exist_ok=True)
+
         # Build pysixtrack model
         import pysixtrack
         line_for_tracking = pysixtrack.Line.from_madx_sequence(
@@ -92,7 +103,7 @@ for ss in sequences_to_be_tracked:
             method={True: 'get_guess', False: 'Nelder-Mead'}[closed_orbit_to_pysixtrack_from_mad])
         line_for_tracking.enable_beambeam()
 
-        with open(f"line_{ss['name']}_from_mad.pkl", "wb") as fid:
+        with open(pysix_fol_name + "/line.pkl", "wb") as fid:
             linedct = line_for_tracking.to_dict(keepextra=True)
             linedct['particle_on_closed_orbit'] = part_on_CO.to_dict()
             linedct['optics_at_start_ring'] = optics_at_start_ring
@@ -103,15 +114,15 @@ for ss in sequences_to_be_tracked:
             separation_given_wrt_closed_orbit_4D=True,
             separation_given_wrt_closed_orbit_6D=True)
 
-        with open(f"line_{ss['name']}_from_mad_with_dip_correction.pkl", "wb") as fid:
+        with open(pysix_fol_name + "/line_with_dip_correction.pkl", "wb") as fid:
             linedct = line_for_tracking.to_dict(keepextra=True)
             linedct['particle_on_closed_orbit'] = part_on_CO.to_dict()
             linedct['optics_at_start_ring'] = optics_at_start_ring
             pickle.dump(linedct, fid)
 
     if generate_sixtrack_inputs:
-        six_fol_name = f"sixtrack_input_{ss['name']}"
-        os.mkdir(six_fol_name)
+        six_fol_name = outp_folder + "/sixtrack"
+        os.makedirs(six_fol_name, exist_ok=True)
 
         # http://sixtrack.web.cern.ch/SixTrack/docs/user_full/manual.php#Ch6.S6
 
@@ -195,6 +206,9 @@ for ss in sequences_to_be_tracked:
         with open(six_fol_name + '/fc.3', 'w') as fid:
             fid.write(f3_string)
 
+        mad_track.use(sequence=ss['seqname'])
+        mad_track.twiss()
+        mad_track.input(f'sixtrack, cavall, radius={radius_sixtrack_multip_conversion_mad}')
 
     # del(mad_track)
     # gc.collect()
