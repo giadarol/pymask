@@ -156,6 +156,17 @@ for ss in sequences_to_be_tracked:
             linedct['optics_at_start_ring'] = optics_at_start_ring
             pickle.dump(linedct, fid)
 
+        line_for_tracking.beambeam_store_closed_orbit_and_dipolar_kicks(
+            part_on_CO,
+            separation_given_wrt_closed_orbit_4D=True,
+            separation_given_wrt_closed_orbit_6D=True)
+
+        with open(f"line_{ss['name']}_from_mad_with_dip_correction.pkl", "wb") as fid:
+            linedct = line_for_tracking.to_dict(keepextra=True)
+            linedct['particle_on_closed_orbit'] = part_on_CO.to_dict()
+            linedct['optics_at_start_ring'] = optics_at_start_ring
+            pickle.dump(linedct, fid)
+
     if generate_sixtrack_inputs:
         raise ValueError('Coming soon :-)')
 

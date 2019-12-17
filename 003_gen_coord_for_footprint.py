@@ -6,7 +6,7 @@ import helpers as hp
 import footprint
 
 
-fname_line = 'line_beam1_tuned_from_mad.pkl'
+fname_line = 'line_beam1_tuned_from_mad_with_dip_correction.pkl'
 epsn_x = 3.5e-6
 epsn_y = 3.5e-6
 r_max_sigma = 6.

@@ -6,12 +6,12 @@ import helpers as hp
 import footprint
 import matplotlib.pyplot as plt
 
-fname_line = 'line_beam1_tuned_from_mad.pkl'
+fname_line = 'line_beam1_tuned_from_mad_with_dip_correction.pkl'
 sixtrack_input_folder = './sixtrack'
 
 track_with = 'PySixtrack'
 track_with = 'Sixtrack'
-#track_with = 'Sixtracklib'
+track_with = 'Sixtracklib'
 #device = 'opencl:1.0'
 device = None
 
