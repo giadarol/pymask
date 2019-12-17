@@ -18,10 +18,10 @@ sequences_to_be_tracked = [
         {'name': 'beam1_tuned', 'fname' : 'mad/lhc_without_bb_fortracking.seq', 'beam': 'b1', 'seqname':'lhcb1'},
         #{'name': 'beam4_tuned', 'fname' : 'mad/lhcb4_without_bb_fortracking.seq', 'beam': 'b2', 'seqname':'lhcb2'},
        ]
-#ip_names = ['ip1', 'ip2', 'ip5', 'ip8']
-#numberOfLRPerIRSide = [21, 20, 21, 20]
-ip_names = ['ip1', 'ip5']
-numberOfLRPerIRSide = [0,0]
+ip_names = ['ip1', 'ip2', 'ip5', 'ip8']
+numberOfLRPerIRSide = [21, 20, 21, 20]
+#ip_names = ['ip1', 'ip5']
+#numberOfLRPerIRSide = [0,0]
 circumference = 26658.8832
 harmonic_number = 35640
 bunch_spacing_buckets = 10

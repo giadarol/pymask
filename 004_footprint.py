@@ -7,12 +7,14 @@ import footprint
 import matplotlib.pyplot as plt
 
 fname_line = 'line_beam1_tuned_from_mad.pkl'
+sixtrack_input_folder = './sixtrack'
 
 track_with = 'PySixtrack'
-#track_with = 'Sixtrack'
-track_with = 'Sixtracklib'
+track_with = 'Sixtrack'
+#track_with = 'Sixtracklib'
 #device = 'opencl:1.0'
 device = None
+
 
 n_turns = 100
 
@@ -32,7 +34,7 @@ DpxDpy_wrt_CO = temp_data['DpxDpy_wrt_CO']
 
 if track_with == 'PySixtrack':
 
-    part = pysixtrack.Particles(**partCO)
+    part = partCO.copy()
 
     x_tbt, px_tbt, y_tbt, py_tbt, sigma_tbt, delta_tbt = hp.track_particle_pysixtrack(
         line, part=part, Dx_wrt_CO_m=0., Dpx_wrt_CO_rad=DpxDpy_wrt_CO[:, :, 0].flatten(),
@@ -45,7 +47,8 @@ elif track_with == 'Sixtrack':
     x_tbt, px_tbt, y_tbt, py_tbt, sigma_tbt, delta_tbt = hp.track_particle_sixtrack(
         partCO=partCO, Dx_wrt_CO_m=0., Dpx_wrt_CO_rad=DpxDpy_wrt_CO[:, :, 0].flatten(),
         Dy_wrt_CO_m=0, Dpy_wrt_CO_rad=DpxDpy_wrt_CO[:, :, 1].flatten(),
-        Dsigma_wrt_CO_m=0., Ddelta_wrt_CO=0., n_turns=n_turns)
+        Dsigma_wrt_CO_m=0., Ddelta_wrt_CO=0., n_turns=n_turns,
+        input_folder=sixtrack_input_folder)
     info = track_with
 
 elif track_with == 'Sixtracklib':
@@ -55,9 +58,9 @@ elif track_with == 'Sixtracklib':
         Dsigma_wrt_CO_m=0., Ddelta_wrt_CO=0., n_turns=n_turns, device=device)
     info = track_with
     if device is None:
-    	info += ' (CPU)'
+        info += ' (CPU)'
     else:
-    	info += ' (GPU %s)'%device
+        info += ' (GPU %s)'%device
 else:
     raise ValueError('What?!')
 
