@@ -6,30 +6,49 @@ import helpers as hp
 import footprint
 import matplotlib.pyplot as plt
 
-fname_line = 'line_beam1_tuned_from_mad_with_dip_correction.pkl'
-sixtrack_input_folder = './sixtrack'
-
 track_with = 'PySixtrack'
 track_with = 'Sixtrack'
-track_with = 'Sixtracklib'
+#track_with = 'Sixtracklib'
 #device = 'opencl:1.0'
 device = None
 
+fname_line = 'line_beam1_tuned_from_mad_with_dip_correction.pkl'
+sixtrack_input_folder = './sixtrack'
+
+epsn_x = 3.5e-6
+epsn_y = 3.5e-6
+r_max_sigma = 6.
+N_r_footp = 10.
+N_theta_footp = 10.
 
 n_turns = 100
 
 with open(fname_line, 'rb') as fid:
     temp_dict = pickle.load(fid)
     partCO = pysixtrack.Particles.from_dict(temp_dict['particle_on_closed_orbit'])
+    optics_at_start_ring = temp_dict['optics_at_start_ring']
     line = pysixtrack.Line.from_dict(temp_dict)
 
 # line.disable_beambeam()
+part = partCO.copy()
 
-with open('DpxDpy_for_footprint.pkl', 'rb') as fid:
-    temp_data = pickle.load(fid)
+beta_x = optics_at_start_ring['betx']
+beta_y = optics_at_start_ring['bety']
 
-xy_norm = temp_data['xy_norm']
-DpxDpy_wrt_CO = temp_data['DpxDpy_wrt_CO']
+sigmax = np.sqrt(beta_x * epsn_x / part.beta0 / part.gamma0)
+sigmay = np.sqrt(beta_y * epsn_y / part.beta0 / part.gamma0)
+
+xy_norm = footprint.initial_xy_polar(r_min=1e-2, r_max=r_max_sigma, r_N=N_r_footp + 1,
+                                     theta_min=np.pi / 100, theta_max=np.pi / 2 - np.pi / 100,
+                                     theta_N=N_theta_footp)
+
+DpxDpy_wrt_CO = np.zeros_like(xy_norm)
+
+for ii in range(xy_norm.shape[0]):
+    for jj in range(xy_norm.shape[1]):
+
+        DpxDpy_wrt_CO[ii, jj, 0] = xy_norm[ii, jj, 0] * np.sqrt(epsn_x / part.beta0 / part.gamma0 / beta_x)
+        DpxDpy_wrt_CO[ii, jj, 1] = xy_norm[ii, jj, 1] * np.sqrt(epsn_y / part.beta0 / part.gamma0 / beta_y)
 
 
 if track_with == 'PySixtrack':
