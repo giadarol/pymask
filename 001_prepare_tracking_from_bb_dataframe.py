@@ -105,13 +105,27 @@ for ss in sequences_to_be_tracked:
         six_fol_name = f"sixtrack_input_{ss['name']}"
 #        os.mkdir(sixfolname)
 
+        # http://sixtrack.web.cern.ch/SixTrack/docs/user_full/manual.php#Ch6.S6
+
         sxt_df_4d = bb_df[bb_df['label']=='bb_lr'].copy()
         sxt_df_4d['h-sep [mm]'] = -sxt_df_4d['separation_x']*1e3
         sxt_df_4d['v-sep [mm]'] = -sxt_df_4d['separation_y']*1e3
-        sxt_df_4d['strength'] = sxt_df_4d['other_charge_ppb']/reference_bunch_charge_sixtrack_ppb
+        sxt_df_4d['strength-ratio'] = sxt_df_4d['other_charge_ppb']/reference_bunch_charge_sixtrack_ppb
         sxt_df_4d['4dSxx [mm*mm]'] = sxt_df_4d['other_Sigma_11']*1e6
         sxt_df_4d['4dSyy [mm*mm]'] = sxt_df_4d['other_Sigma_33']*1e6
         sxt_df_4d['4dSxy [mm*mm]'] = sxt_df_4d['other_Sigma_13']*1e6
+        sxt_df_4d['fort3entry'] = sxt_df_4d.apply(lambda x: ' '.join([
+                f"{x.elementName}",
+                '0',
+                f"{x['4dSxx [mm*mm]']}",
+                f"{x['4dSyy [mm*mm]']}",
+                f"{x['h-sep [mm]']}",
+                f"{x['v-sep [mm]']}",
+                f"{x['strength-ratio']}",
+                f"{x['4dSxy [mm*mm]']}"
+                ]), axis=1)
+
+
 
         sxt_df_6d = bb_df[bb_df['label']=='bb_ho'].copy()
         sxt_df_6d['h-sep [mm]'] = -sxt_df_6d['separation_x']*1e3
