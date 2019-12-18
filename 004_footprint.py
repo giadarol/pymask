@@ -12,10 +12,11 @@ track_with = 'Sixtrack'
 #device = 'opencl:1.0'
 device = None
 
-fname_line = 'pymask_output_beam1_tuned/pysixtrack/line_bb_dipole_cancelled.pkl'
-fname_partco = 'pymask_output_beam1_tuned/pysixtrack/particle_on_closed_orbit.pkl'
-sixtrack_input_folder = 'pymask_output_beam1_tuned/sixtrack'
-opt_start_ring_fname = 'pymask_output_beam1_tuned/optics_orbit_at_start_ring.pkl'
+folder = 'pymask_output_beam1_tuned'
+fname_line = folder + '/pysixtrack/line_bb_dipole_cancelled.pkl'
+fname_partco = folder + '/pysixtrack/particle_on_closed_orbit.pkl'
+sixtrack_input_folder = folder + '/sixtrack'
+opt_start_ring_fname = folder + '/optics_orbit_at_start_ring.pkl'
 
 epsn_x = 2.5e-6
 epsn_y = 2.5e-6
