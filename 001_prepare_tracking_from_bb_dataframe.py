@@ -12,6 +12,7 @@ bb_data_frames_fname = 'bb_dataframes.pkl'
 
 generate_pysixtrack_lines = True
 generate_sixtrack_inputs = True
+generate_mad_sequences_with_bb = True
 
 closed_orbit_to_pysixtrack_from_mad = True
 
@@ -51,38 +52,48 @@ for ss in sequences_to_be_tracked:
         sequence_names=[ss['seqname']],
         mad_echo=False, mad_warn=False, mad_info=False)
 
-    # disable bb in mad model
-    mad_track.globals.on_bb_switch = 0
+    # explicitly enable bb in mad model
+    mad_track.globals.on_bb_switch = 1
 
-    # Twiss and get closed-orbit
-    mad_track.use(sequence=ss['seqname'])
-    twiss_table = mad_track.twiss()
-
-    beta0 = mad_track.sequence[ss['seqname']].beam.beta
-    gamma0 = mad_track.sequence[ss['seqname']].beam.gamma
-    p0c_eV = mad_track.sequence[ss['seqname']].beam.pc*1.e9
-
-    x_CO  = twiss_table.x[0]
-    px_CO = twiss_table.px[0]
-    y_CO  = twiss_table.y[0]
-    py_CO = twiss_table.py[0]
-    t_CO  = twiss_table.t[0]
-    pt_CO = twiss_table.pt[0]
-    #convert tau, pt to sigma,delta
-    sigma_CO = beta0 * t_CO
-    delta_CO = ((pt_CO**2 + 2*pt_CO/beta0) + 1)**0.5 - 1
-
-    mad_CO = np.array([x_CO, px_CO, y_CO, py_CO, sigma_CO, delta_CO])
-
-    optics_at_start_ring = {
-            'betx': twiss_table.betx[0],
-            'bety': twiss_table.betx[0]}
-
-    mad_track.input(f"save, sequence={ss['seqname']}, beam=true, file={mad_fol_name}/sequence_w_bb.seq")
+    # Save sequence
+    if generate_mad_sequences_with_bb:
+        mad_track.input(
+                f"save, sequence={ss['seqname']}, beam=true, file={mad_fol_name}/sequence_w_bb.seq")
 
     if generate_pysixtrack_lines:
         pysix_fol_name = outp_folder + "/pysixtrack"
         os.makedirs(pysix_fol_name, exist_ok=True)
+
+        # Get closed orbit from mad
+        # disable bb in mad model
+        mad_track.globals.on_bb_switch = 0
+
+        # Twiss and get closed-orbit
+        mad_track.use(sequence=ss['seqname'])
+        twiss_table = mad_track.twiss()
+
+        # explicitly enable bb in mad model
+        mad_track.globals.on_bb_switch = 1
+
+        beta0 = mad_track.sequence[ss['seqname']].beam.beta
+        gamma0 = mad_track.sequence[ss['seqname']].beam.gamma
+        p0c_eV = mad_track.sequence[ss['seqname']].beam.pc*1.e9
+
+        x_CO  = twiss_table.x[0]
+        px_CO = twiss_table.px[0]
+        y_CO  = twiss_table.y[0]
+        py_CO = twiss_table.py[0]
+        t_CO  = twiss_table.t[0]
+        pt_CO = twiss_table.pt[0]
+        #convert tau, pt to sigma,delta
+        sigma_CO = beta0 * t_CO
+        delta_CO = ((pt_CO**2 + 2*pt_CO/beta0) + 1)**0.5 - 1
+
+        mad_CO = np.array([x_CO, px_CO, y_CO, py_CO, sigma_CO, delta_CO])
+
+        optics_at_start_ring = {
+                'betx': twiss_table.betx[0],
+                'bety': twiss_table.betx[0]}
 
         # Build pysixtrack model
         import pysixtrack
