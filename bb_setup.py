@@ -1,3 +1,4 @@
+import os
 import copy
 import pickle
 
@@ -335,21 +336,21 @@ def setup_beam_beam_in_line(
                 ee.sigma_23 = 0.0
                 ee.sigma_24 = 0.0
 
-def get_optics_and_orbit_at_start_ring(mad_track, seq_name, with_bb_forces=False):
+def get_optics_and_orbit_at_start_ring(mad, seq_name, with_bb_forces=False):
 
-    initial_bb_state = mad_track.globals.on_bb_switch
+    initial_bb_state = mad.globals.on_bb_switch
 
-    mad_track.globals.on_bb_switch = {True: 1, False: 0}[with_bb_forces]
+    mad.globals.on_bb_switch = {True: 1, False: 0}[with_bb_forces]
 
     # Twiss and get closed-orbit
-    mad_track.use(sequence=seq_name)
-    twiss_table = mad_track.twiss()
+    mad.use(sequence=seq_name)
+    twiss_table = mad.twiss()
 
-    mad_track.globals.on_bb_switch = initial_bb_state
+    mad.globals.on_bb_switch = initial_bb_state
 
-    beta0 = mad_track.sequence[seq_name].beam.beta
-    gamma0 = mad_track.sequence[seq_name].beam.gamma
-    p0c_eV = mad_track.sequence[seq_name].beam.pc*1.e9
+    beta0 = mad.sequence[seq_name].beam.beta
+    gamma0 = mad.sequence[seq_name].beam.gamma
+    p0c_eV = mad.sequence[seq_name].beam.pc*1.e9
 
     optics_at_start_ring = {
             'beta': beta0,
@@ -375,15 +376,15 @@ def get_optics_and_orbit_at_start_ring(mad_track, seq_name, with_bb_forces=False
             }
     return optics_at_start_ring
 
-def generate_pysixtrack_line_with_bb(mad_track, seq_name, bb_df,
+def generate_pysixtrack_line_with_bb(mad, seq_name, bb_df,
         closed_orbit_method='from_mad', pickle_lines_in_folder=None):
 
-    opt_and_CO = get_optics_and_orbit_at_start_ring(mad_track, seq_name)
+    opt_and_CO = get_optics_and_orbit_at_start_ring(mad, seq_name)
 
     # Build pysixtrack model
     import pysixtrack
     pysxt_line = pysixtrack.Line.from_madx_sequence(
-        mad_track.sequence[seq_name])
+        mad.sequence[seq_name])
 
     setup_beam_beam_in_line(pysxt_line, bb_df, bb_coupling=False)
 
@@ -392,9 +393,9 @@ def generate_pysixtrack_line_with_bb(mad_track, seq_name, bb_df,
             pysixtrack.elements.Cavity)
     for cc, nn in zip(cavities, cav_names):
         if cc.frequency ==0.:
-            ii_mad = mad_track.sequence[seq_name].element_names().index(nn)
-            cc_mad = mad_track.sequence[seq_name].elements[ii_mad]
-            f0_mad = mad_track.sequence[seq_name].beam.freq0 * 1e6 # mad has it in MHz
+            ii_mad = mad.sequence[seq_name].element_names().index(nn)
+            cc_mad = mad.sequence[seq_name].elements[ii_mad]
+            f0_mad = mad.sequence[seq_name].beam.freq0 * 1e6 # mad has it in MHz
             cc.frequency = f0_mad*cc_mad.parent.harmon
 
     mad_CO = np.array([opt_and_CO[kk] for kk in ['x', 'px', 'y', 'py', 'sigma', 'delta']])
@@ -419,6 +420,8 @@ def generate_pysixtrack_line_with_bb(mad_track, seq_name, bb_df,
 
     if pickle_lines_in_folder is not None:
         pysix_fol_name = pickle_lines_in_folder
+        os.makedirs(pysix_fol_name, exist_ok=True)
+
         with open(pysix_fol_name + "/line_bb_dipole_not_cancelled.pkl", "wb") as fid:
             pickle.dump(pysxt_line.to_dict(keepextra=True), fid)
 
@@ -429,3 +432,129 @@ def generate_pysixtrack_line_with_bb(mad_track, seq_name, bb_df,
             pickle.dump(part_on_CO.to_dict(), fid)
 
     return pysxt_dict
+
+def generate_sixtrack_input(mad, seq_name, bb_df, output_folder,
+        reference_bunch_charge_sixtrack_ppb,
+        emitnx_sixtrack_um,
+        emitny_sixtrack_um,
+        sigz_sixtrack_m,
+        sige_sixtrack,
+        ibeco_sixtrack,
+        ibtyp_sixtrack,
+        lhc_sixtrack,
+        ibbc_sixtrack,
+        radius_sixtrack_multip_conversion_mad):
+
+    six_fol_name = output_folder
+    os.makedirs(six_fol_name, exist_ok=True)
+
+    os.system('rm fc.*')
+    mad.use(sequence=seq_name)
+    mad.twiss()
+    mad.input(f'sixtrack, cavall, radius={radius_sixtrack_multip_conversion_mad}')
+    os.system(f'mv fc.* {six_fol_name}')
+    os.system(f'cp {six_fol_name}/fc.2 {six_fol_name}/fc.2.old')
+
+    with open(six_fol_name + '/fc.2', 'r') as fid:
+        fc2lines = fid.readlines()
+
+    for ii, ll in enumerate(fc2lines):
+        llfields = ll.split()
+        try:
+            if int(llfields[1]) == 20:
+                newll = ' '.join([
+                    llfields[0],
+                    llfields[1]]
+                    + (len(llfields)-2)* ['0.0']
+                    +['\n'])
+                fc2lines[ii] = newll
+        except ValueError:
+            pass # line does not have an integer in the second field
+        except IndexError:
+            pass # line has less than two fields
+
+    with open(six_fol_name + '/fc.2', 'w') as fid:
+        fid.writelines(fc2lines)
+
+    # http://sixtrack.web.cern.ch/SixTrack/docs/user_full/manual.php#Ch6.S6
+
+    sxt_df_4d = bb_df[bb_df['label']=='bb_lr'].copy()
+    sxt_df_4d['h-sep [mm]'] = -sxt_df_4d['separation_x']*1e3
+    sxt_df_4d['v-sep [mm]'] = -sxt_df_4d['separation_y']*1e3
+    sxt_df_4d['strength-ratio'] = sxt_df_4d['other_charge_ppb']/reference_bunch_charge_sixtrack_ppb
+    sxt_df_4d['4dSxx [mm*mm]'] = sxt_df_4d['other_Sigma_11']*1e6
+    sxt_df_4d['4dSyy [mm*mm]'] = sxt_df_4d['other_Sigma_33']*1e6
+    sxt_df_4d['4dSxy [mm*mm]'] = sxt_df_4d['other_Sigma_13']*1e6
+    sxt_df_4d['fort3entry'] = sxt_df_4d.apply(lambda x: ' '.join([
+            f"{x.elementName}",
+            '0',
+            f"{x['4dSxx [mm*mm]']}",
+            f"{x['4dSyy [mm*mm]']}",
+            f"{x['h-sep [mm]']}",
+            f"{x['v-sep [mm]']}",
+            f"{x['strength-ratio']}",
+            # f"{x['4dSxy [mm*mm]']}" Not really used
+            ]), axis=1)
+
+
+    sxt_df_6d = bb_df[bb_df['label']=='bb_ho'].copy()
+    sxt_df_6d['h-sep [mm]'] = -sxt_df_6d['separation_x']*1e3
+    sxt_df_6d['v-sep [mm]'] = -sxt_df_6d['separation_y']*1e3
+    sxt_df_6d['phi [rad]'] = sxt_df_6d['phi']
+    sxt_df_6d['alpha [rad]'] = sxt_df_6d['alpha']
+    sxt_df_6d['strength-ratio'] = sxt_df_6d['other_charge_ppb']/reference_bunch_charge_sixtrack_ppb
+    sxt_df_6d['Sxx [mm*mm]'] = sxt_df_6d['other_Sigma_11'] *1e6
+    sxt_df_6d['Sxxp [mm*mrad]'] = sxt_df_6d['other_Sigma_12'] *1e6
+    sxt_df_6d['Sxpxp [mrad*mrad]'] = sxt_df_6d['other_Sigma_22'] *1e6
+    sxt_df_6d['Syy [mm*mm]'] = sxt_df_6d['other_Sigma_33'] *1e6
+    sxt_df_6d['Syyp [mm*mrad]'] = sxt_df_6d['other_Sigma_34'] *1e6
+    sxt_df_6d['Sypyp [mrad*mrad]'] = sxt_df_6d['other_Sigma_44'] *1e6
+    sxt_df_6d['Sxy [mm*mm]'] = sxt_df_6d['other_Sigma_13'] *1e6
+    sxt_df_6d['Sxyp [mm*mrad]'] = sxt_df_6d['other_Sigma_14'] *1e6
+    sxt_df_6d['Sxpy [mrad*mm]'] = sxt_df_6d['other_Sigma_23'] *1e6
+    sxt_df_6d['Sxpyp [mrad*mrad]'] = sxt_df_6d['other_Sigma_24'] *1e6
+    sxt_df_6d['fort3entry'] = sxt_df_6d.apply(lambda x: ' '.join([
+            f"{x.elementName}",
+            '1',
+            f"{x['phi [rad]']}",
+            f"{x['alpha [rad]']}",
+            f"{x['h-sep [mm]']}",
+            f"{x['v-sep [mm]']}",
+            '\n'
+            f"{x['Sxx [mm*mm]']}",
+            f"{x['Sxxp [mm*mrad]']}",
+            f"{x['Sxpxp [mrad*mrad]']}",
+            f"{x['Syy [mm*mm]']}",
+            f"{x['Syyp [mm*mrad]']}",
+            '\n',
+            f"{x['Sypyp [mrad*mrad]']}",
+            f"{x['Sxy [mm*mm]']}",
+            f"{x['Sxyp [mm*mrad]']}",
+            f"{x['Sxpy [mrad*mm]']}",
+            f"{x['Sxpyp [mrad*mrad]']}",
+            f"{x['strength-ratio']}",
+            ]), axis=1)
+
+    f3_common_settings = ' '.join([
+            f"{reference_bunch_charge_sixtrack_ppb}",
+            f"{emitnx_sixtrack_um}",
+            f"{emitny_sixtrack_um}",
+            f"{sigz_sixtrack_m}",
+            f"{sige_sixtrack}",
+            f"{ibeco_sixtrack}",
+            f"{ibtyp_sixtrack}",
+            f"{lhc_sixtrack}",
+            f"{ibbc_sixtrack}",
+            ])
+
+    f3_string = '\n'.join([
+        'BEAM',
+        'EXPERT',
+        f3_common_settings]
+        + list(sxt_df_6d['fort3entry'].values)
+        + list(sxt_df_4d['fort3entry'].values)
+        + ['NEXT'])
+
+    with open(six_fol_name + '/fc.3', 'w') as fid:
+        fid.write(f3_string)
+
