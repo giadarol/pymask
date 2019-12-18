@@ -10,11 +10,11 @@ import os
 
 bb_data_frames_fname = 'bb_dataframes.pkl'
 
-generate_pysixtrack_lines = True
+generate_pysixtrack_lines = False
 generate_sixtrack_inputs = True
 generate_mad_sequences_with_bb = True
 
-closed_orbit_to_pysixtrack_from_mad = True
+closed_orbit_method_for_pysixtrack = 'from_mad' #'from_mad' or 'from_tracking'
 
 reference_bunch_charge_sixtrack_ppb = 1.2e11
 emitnx_sixtrack_um = 2.
@@ -55,82 +55,27 @@ for ss in sequences_to_be_tracked:
     # explicitly enable bb in mad model
     mad_track.globals.on_bb_switch = 1
 
-    # Save sequence
+    # Optics and orbit at start ring
+    optics_orbit_start_ring = bbs.get_optics_and_orbit_at_start_ring(mad_track, seq_name)
+    with open(outp_folder + '/optics_orbit_at_start_ring.pkl', 'wb'):
+        pickle.dump(optics_orbit_start_ring, fid)
+
+    # Save mad sequence
     if generate_mad_sequences_with_bb:
+        mad_track.use(ss['seqname'])
         mad_track.input(
                 f"save, sequence={ss['seqname']}, beam=true, file={mad_fol_name}/sequence_w_bb.seq")
 
+    # Generate pysixtrack lines
     if generate_pysixtrack_lines:
         pysix_fol_name = outp_folder + "/pysixtrack"
         os.makedirs(pysix_fol_name, exist_ok=True)
 
-        # Get closed orbit from mad
-        # disable bb in mad model
-        mad_track.globals.on_bb_switch = 0
+        dct_pysxt = bbs.generate_pysixtrack_line_with_bb(mad_track, ss['seqname'], bb_df,
+                closed_orbit_method=closed_orbit_method_for_pysixtrack,
+                pickle_lines_in_folder=pysix_fol_name)
 
-        # Twiss and get closed-orbit
-        mad_track.use(sequence=ss['seqname'])
-        twiss_table = mad_track.twiss()
-
-        # explicitly enable bb in mad model
-        mad_track.globals.on_bb_switch = 1
-
-        beta0 = mad_track.sequence[ss['seqname']].beam.beta
-        gamma0 = mad_track.sequence[ss['seqname']].beam.gamma
-        p0c_eV = mad_track.sequence[ss['seqname']].beam.pc*1.e9
-
-        x_CO  = twiss_table.x[0]
-        px_CO = twiss_table.px[0]
-        y_CO  = twiss_table.y[0]
-        py_CO = twiss_table.py[0]
-        t_CO  = twiss_table.t[0]
-        pt_CO = twiss_table.pt[0]
-        #convert tau, pt to sigma,delta
-        sigma_CO = beta0 * t_CO
-        delta_CO = ((pt_CO**2 + 2*pt_CO/beta0) + 1)**0.5 - 1
-
-        mad_CO = np.array([x_CO, px_CO, y_CO, py_CO, sigma_CO, delta_CO])
-
-        optics_at_start_ring = {
-                'betx': twiss_table.betx[0],
-                'bety': twiss_table.betx[0]}
-
-        # Build pysixtrack model
-        import pysixtrack
-        line_for_tracking = pysixtrack.Line.from_madx_sequence(
-            mad_track.sequence[ss['seqname']])
-
-        bbs.setup_beam_beam_in_line(line_for_tracking, bb_df, bb_coupling=False)
-
-        # Temporary fix due to bug in loader
-        cavities, _ = line_for_tracking.get_elements_of_type(
-                pysixtrack.elements.Cavity)
-        for cc in cavities:
-            cc.frequency = bb_df_dict['temp_rf_frequency']
-
-        line_for_tracking.disable_beambeam()
-        part_on_CO = line_for_tracking.find_closed_orbit(
-            guess=mad_CO, p0c=p0c_eV,
-            method={True: 'get_guess', False: 'Nelder-Mead'}[closed_orbit_to_pysixtrack_from_mad])
-        line_for_tracking.enable_beambeam()
-
-        with open(pysix_fol_name + "/line.pkl", "wb") as fid:
-            linedct = line_for_tracking.to_dict(keepextra=True)
-            linedct['particle_on_closed_orbit'] = part_on_CO.to_dict()
-            linedct['optics_at_start_ring'] = optics_at_start_ring
-            pickle.dump(linedct, fid)
-
-        line_for_tracking.beambeam_store_closed_orbit_and_dipolar_kicks(
-            part_on_CO,
-            separation_given_wrt_closed_orbit_4D=True,
-            separation_given_wrt_closed_orbit_6D=True)
-
-        with open(pysix_fol_name + "/line_with_dip_correction.pkl", "wb") as fid:
-            linedct = line_for_tracking.to_dict(keepextra=True)
-            linedct['particle_on_closed_orbit'] = part_on_CO.to_dict()
-            linedct['optics_at_start_ring'] = optics_at_start_ring
-            pickle.dump(linedct, fid)
-
+    # Generate sixtrack input
     if generate_sixtrack_inputs:
         six_fol_name = outp_folder + "/sixtrack"
         os.makedirs(six_fol_name, exist_ok=True)
