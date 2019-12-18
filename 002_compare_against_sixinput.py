@@ -1,29 +1,50 @@
+import shutil
 import pickle
 import numpy as np
 
 import pysixtrack
 import sixtracktools
 
-# Load the two machines
-with open("pymask_output_beam1_tuned/pysixtrack/line_bb_dipole_not_cancelled.pkl", "rb") as fid:
-    lmad = pysixtrack.Line.from_dict(pickle.load(fid))
+input_to_test = 'pysixtrack_from_pymask'
+input_to_test = 'sixtrack_from_pymask'
 
+if input_to_test == 'pysixtrack_from_pymask':
+    # Load pysixtrack machine 
+    with open("pymask_output_beam1_tuned/pysixtrack/line_bb_dipole_not_cancelled.pkl", "rb") as fid:
+        ltest = pysixtrack.Line.from_dict(pickle.load(fid))
+elif input_to_test == 'sixtrack_from_pymask':
+    sixtrack_input_folder = 'pymask_output_beam1_tuned/sixtrack'
+    shutil.copy(sixtrack_input_folder + "/fc.2", sixtrack_input_folder + "/fort.2")
+
+    with open(sixtrack_input_folder + "/fort.3", "w") as fout:
+        with open("mad/fort_beginning.3", "r") as fid_fort3b:
+            fout.write(fid_fort3b.read())
+        with open(sixtrack_input_folder + "/fc.3", "r") as fid_fc3:
+            fout.write(fid_fc3.read())
+        with open("mad/fort_end.3", "r") as fid_fort3e:
+            fout.write(fid_fort3e.read())
+    sixinput_test = sixtracktools.sixinput.SixInput(sixtrack_input_folder)
+    ltest = pysixtrack.Line.from_sixinput(sixinput_test)
+else:
+    raise ValueError('What?!')
+
+# Load reference sixtrack machine
 sixinput = sixtracktools.sixinput.SixInput("sixtrack/")
 lsix = pysixtrack.Line.from_sixinput(sixinput)
 
-original_length = lmad.get_length()
+original_length = ltest.get_length()
 assert (lsix.get_length() - original_length) < 1e-6
 
 # Simplify the two machines
-for ll in (lmad, lsix):
+for ll in (ltest, lsix):
     ll.remove_inactive_multipoles(inplace=True)
     ll.remove_zero_length_drifts(inplace=True)
     ll.merge_consecutive_drifts(inplace=True)
 
 # Check that the two machines are identical
-assert len(lmad) == len(lsix)
+assert len(ltest) == len(lsix)
 
-assert (lmad.get_length() - original_length) < 1e-6
+assert (ltest.get_length() - original_length) < 1e-6
 assert (lsix.get_length() - original_length) < 1e-6
 
 
@@ -32,7 +53,7 @@ def norm(x):
 
 
 for ii, (ee_mad, ee_six, nn_mad, nn_six) in enumerate(
-    zip(lmad.elements, lsix.elements, lmad.element_names, lsix.element_names)
+    zip(ltest.elements, lsix.elements, ltest.element_names, lsix.element_names)
 ):
     assert type(ee_mad) == type(ee_six)
 
