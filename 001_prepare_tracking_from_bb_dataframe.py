@@ -124,6 +124,34 @@ for ss in sequences_to_be_tracked:
         six_fol_name = outp_folder + "/sixtrack"
         os.makedirs(six_fol_name, exist_ok=True)
 
+        os.system('rm fc.*')
+        mad_track.use(sequence=ss['seqname'])
+        mad_track.twiss()
+        mad_track.input(f'sixtrack, cavall, radius={radius_sixtrack_multip_conversion_mad}')
+        os.system(f'mv fc.* {six_fol_name}')
+        os.system(f'cp {six_fol_name}/fc.2 {six_fol_name}/fc.2.old')
+
+        with open(six_fol_name + '/fc.2', 'r') as fid:
+            fc2lines = fid.readlines()
+
+        for ii, ll in enumerate(fc2lines):
+            llfields = ll.split()
+            try:
+                if int(llfields[1]) == 20:
+                    newll = ' '.join([
+                        llfields[0],
+                        llfields[1]]
+                        + (len(llfields)-2)* ['0.0']
+                        +['\n'])
+                    fc2lines[ii] = newll
+            except ValueError:
+                pass # line does not have an integer in the second field
+            except IndexError:
+                pass # line has less than two fields
+
+        with open(six_fol_name + '/fc.2', 'w') as fid:
+            fid.writelines(fc2lines)
+
         # http://sixtrack.web.cern.ch/SixTrack/docs/user_full/manual.php#Ch6.S6
 
         sxt_df_4d = bb_df[bb_df['label']=='bb_lr'].copy()
@@ -206,9 +234,6 @@ for ss in sequences_to_be_tracked:
         with open(six_fol_name + '/fc.3', 'w') as fid:
             fid.write(f3_string)
 
-        mad_track.use(sequence=ss['seqname'])
-        mad_track.twiss()
-        mad_track.input(f'sixtrack, cavall, radius={radius_sixtrack_multip_conversion_mad}')
 
     # del(mad_track)
     # gc.collect()
