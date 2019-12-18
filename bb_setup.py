@@ -553,7 +553,7 @@ def generate_sixtrack_input(mad, seq_name, bb_df, output_folder,
         f3_common_settings]
         + list(sxt_df_6d['fort3entry'].values)
         + list(sxt_df_4d['fort3entry'].values)
-        + ['NEXT'])
+        + ['NEXT\n'])
 
     with open(six_fol_name + '/fc.3', 'w') as fid:
         fid.write(f3_string)

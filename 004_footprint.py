@@ -7,27 +7,33 @@ import footprint
 import matplotlib.pyplot as plt
 
 track_with = 'PySixtrack'
-#track_with = 'Sixtrack'
-track_with = 'Sixtracklib'
+track_with = 'Sixtrack'
+#track_with = 'Sixtracklib'
 #device = 'opencl:1.0'
 device = None
 
-fname_line = 'line_beam1_tuned_from_mad_with_dip_correction.pkl'
-sixtrack_input_folder = './sixtrack'
+fname_line = 'pymask_output_beam1_tuned/pysixtrack/line_bb_dipole_cancelled.pkl'
+fname_partco = 'pymask_output_beam1_tuned/pysixtrack/particle_on_closed_orbit.pkl'
+sixtrack_input_folder = 'pymask_output_beam1_tuned/sixtrack'
+opt_start_ring_fname = 'pymask_output_beam1_tuned/optics_orbit_at_start_ring.pkl'
 
-epsn_x = 3.5e-6
-epsn_y = 3.5e-6
-r_max_sigma = 6.
-N_r_footp = 10.
+epsn_x = 2.5e-6
+epsn_y = 2.5e-6
+r_max_sigma = 5.
+N_r_footp = 20.
 N_theta_footp = 10.
 
 n_turns = 100
 
 with open(fname_line, 'rb') as fid:
-    temp_dict = pickle.load(fid)
-    partCO = pysixtrack.Particles.from_dict(temp_dict['particle_on_closed_orbit'])
-    optics_at_start_ring = temp_dict['optics_at_start_ring']
-    line = pysixtrack.Line.from_dict(temp_dict)
+    line = pysixtrack.Line.from_dict(pickle.load(fid))
+
+with open(fname_partco, 'rb') as fid:
+    partCO = pysixtrack.Particles.from_dict(pickle.load(fid))
+
+with open(opt_start_ring_fname, 'rb') as fid:
+    optics_at_start_ring = pickle.load(fid)
+
 
 # line.disable_beambeam()
 part = partCO.copy()
