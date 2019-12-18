@@ -4,7 +4,7 @@ import shutil
 from cpymad.madx import Madx
 
 mask_fname = "ts_collisions_ats30_en20_IMO380_C7_X160_I1.2_62.3100_60.3200.mask"
-sixtrack_input_folder = '../sixtrack'
+sixtrack_input_folder = 'sixtrack'
 mylhcbeam = 1
 on_bb_switch = 1
 

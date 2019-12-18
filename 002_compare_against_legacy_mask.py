@@ -29,7 +29,7 @@ else:
     raise ValueError('What?!')
 
 # Load reference sixtrack machine
-sixinput = sixtracktools.sixinput.SixInput("sixtrack/")
+sixinput = sixtracktools.sixinput.SixInput("mad/sixtrack/")
 lsix = pysixtrack.Line.from_sixinput(sixinput)
 
 original_length = ltest.get_length()

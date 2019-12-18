@@ -29,7 +29,7 @@ radius_sixtrack_multip_conversion_mad = 0.017
 
 sequences_to_be_tracked = [
         {'name': 'beam1_tuned', 'fname' : 'mad/lhc_without_bb_fortracking.seq', 'beam': 'b1', 'seqname':'lhcb1', 'bb_df':'bb_df_b1'},
-        #{'name': 'beam4_tuned', 'fname' : 'mad/lhcb4_without_bb_fortracking.seq', 'beam': 'b2', 'seqname':'lhcb2', 'bb_df':'bb_df_b4'},
+        {'name': 'beam4_tuned', 'fname' : 'mad/lhcb4_without_bb_fortracking.seq', 'beam': 'b2', 'seqname':'lhcb2', 'bb_df':'bb_df_b4'},
        ]
 
 with open(bb_data_frames_fname, 'rb') as fid:
@@ -37,13 +37,15 @@ with open(bb_data_frames_fname, 'rb') as fid:
 
 for ss in sequences_to_be_tracked:
 
-    bb_df =  bb_df_dict[ss['bb_df']]
-
+    # Define output folder
     outp_folder = 'pymask_output_' + ss['name']
-    mad_fol_name = outp_folder + '/mad'
-    os.makedirs(mad_fol_name, exist_ok=True)
+    os.makedirs(outp_folder, exist_ok=True)
+
+    # Load dataframe and save a copy for reference
+    bb_df =  bb_df_dict[ss['bb_df']]
     bb_df.to_pickle(outp_folder+'/bb_df.pkl')
 
+    # Build mad model
     mad_track = bbs.build_mad_instance_with_bb(
         sequences_file_name=ss['fname'],
         bb_data_frames=[bb_df],
@@ -51,16 +53,18 @@ for ss in sequences_to_be_tracked:
         sequence_names=[ss['seqname']],
         mad_echo=False, mad_warn=False, mad_info=False)
 
-    # explicitly enable bb in mad model
+    # Explicitly enable bb in mad model
     mad_track.globals.on_bb_switch = 1
 
-    # Optics and orbit at start ring
+    # Get optics and orbit at start ring
     optics_orbit_start_ring = bbs.get_optics_and_orbit_at_start_ring(mad_track, ss['seqname'])
     with open(outp_folder + '/optics_orbit_at_start_ring.pkl', 'wb') as fid:
         pickle.dump(optics_orbit_start_ring, fid)
 
     # Save mad sequence
     if generate_mad_sequences_with_bb:
+        mad_fol_name = outp_folder + '/mad'
+        os.makedirs(mad_fol_name, exist_ok=True)
         mad_track.use(ss['seqname'])
         mad_track.input(
                 f"save, sequence={ss['seqname']}, beam=true, file={mad_fol_name}/sequence_w_bb.seq")
@@ -86,6 +90,7 @@ for ss in sequences_to_be_tracked:
             flag_lhc_sixtrack,
             flag_ibbc_sixtrack,
             radius_sixtrack_multip_conversion_mad)
+
     # del(mad_track)
     # gc.collect()
 
