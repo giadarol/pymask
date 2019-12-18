@@ -10,7 +10,7 @@ import os
 
 bb_data_frames_fname = 'bb_dataframes.pkl'
 
-generate_pysixtrack_lines = False
+generate_pysixtrack_lines = True
 generate_sixtrack_inputs = True
 generate_mad_sequences_with_bb = True
 
@@ -56,8 +56,8 @@ for ss in sequences_to_be_tracked:
     mad_track.globals.on_bb_switch = 1
 
     # Optics and orbit at start ring
-    optics_orbit_start_ring = bbs.get_optics_and_orbit_at_start_ring(mad_track, seq_name)
-    with open(outp_folder + '/optics_orbit_at_start_ring.pkl', 'wb'):
+    optics_orbit_start_ring = bbs.get_optics_and_orbit_at_start_ring(mad_track, ss['seqname'])
+    with open(outp_folder + '/optics_orbit_at_start_ring.pkl', 'wb') as fid:
         pickle.dump(optics_orbit_start_ring, fid)
 
     # Save mad sequence

@@ -5,7 +5,7 @@ import pysixtrack
 import sixtracktools
 
 # Load the two machines
-with open("line_beam1_tuned_from_mad.pkl", "rb") as fid:
+with open("pymask_output_beam1_tuned/pysixtrack/line_bb_dipole_not_cancelled.pkl", "rb") as fid:
     lmad = pysixtrack.Line.from_dict(pickle.load(fid))
 
 sixinput = sixtracktools.sixinput.SixInput("sixtrack/")

@@ -1,4 +1,5 @@
 import copy
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -341,14 +342,14 @@ def get_optics_and_orbit_at_start_ring(mad_track, seq_name, with_bb_forces=False
     mad_track.globals.on_bb_switch = {True: 1, False: 0}[with_bb_forces]
 
     # Twiss and get closed-orbit
-    mad_track.use(sequence=ss['seqname'])
+    mad_track.use(sequence=seq_name)
     twiss_table = mad_track.twiss()
 
     mad_track.globals.on_bb_switch = initial_bb_state
 
-    beta0 = mad_track.sequence[ss['seqname']].beam.beta
-    gamma0 = mad_track.sequence[ss['seqname']].beam.gamma
-    p0c_eV = mad_track.sequence[ss['seqname']].beam.pc*1.e9
+    beta0 = mad_track.sequence[seq_name].beam.beta
+    gamma0 = mad_track.sequence[seq_name].beam.gamma
+    p0c_eV = mad_track.sequence[seq_name].beam.pc*1.e9
 
     optics_at_start_ring = {
             'beta': beta0,
@@ -382,9 +383,9 @@ def generate_pysixtrack_line_with_bb(mad_track, seq_name, bb_df,
     # Build pysixtrack model
     import pysixtrack
     pysxt_line = pysixtrack.Line.from_madx_sequence(
-        mad_track.sequence[ss['seqname']])
+        mad_track.sequence[seq_name])
 
-    bbs.setup_beam_beam_in_line(pysxt_line, bb_df, bb_coupling=False)
+    setup_beam_beam_in_line(pysxt_line, bb_df, bb_coupling=False)
 
     # Temporary fix due to bug in mad loader
     cavities, cav_names = pysxt_line.get_elements_of_type(
@@ -424,7 +425,7 @@ def generate_pysixtrack_line_with_bb(mad_track, seq_name, bb_df,
         with open(pysix_fol_name + "/line_bb_dipole_cancelled.pkl", "wb") as fid:
             pickle.dump(pysxt_line_bb_dipole_cancelled.to_dict(keepextra=True), fid)
 
-        with open(pysix_fol_name + "/line_bb_dipole_cancelled.pkl", "wb") as fid:
-            pickle.dump(part_on_CO.to_dict(keepextra=True), fid)
+        with open(pysix_fol_name + "/particle_on_closed_orbit.pkl", "wb") as fid:
+            pickle.dump(part_on_CO.to_dict(), fid)
 
     return pysxt_dict
