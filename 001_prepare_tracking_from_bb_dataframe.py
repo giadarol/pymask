@@ -35,6 +35,7 @@ sequences_to_be_tracked = [
 with open(bb_data_frames_fname, 'rb') as fid:
     bb_df_dict = pickle.load(fid)
 
+mad_objects = []
 for ss in sequences_to_be_tracked:
 
     # Define output folder
@@ -91,6 +92,7 @@ for ss in sequences_to_be_tracked:
             flag_ibbc_sixtrack,
             radius_sixtrack_multip_conversion_mad)
 
+    mad_objects.append(mad_track)
     # del(mad_track)
     # gc.collect()
 

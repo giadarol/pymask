@@ -13,6 +13,8 @@ track_with = 'Sixtrack'
 device = None
 
 folder = 'pymask_output_beam1_tuned'
+folder = 'pymask_output_beam4_tuned'
+
 fname_line = folder + '/pysixtrack/line_bb_dipole_cancelled.pkl'
 fname_partco = folder + '/pysixtrack/particle_on_closed_orbit.pkl'
 sixtrack_input_folder = folder + '/sixtrack'

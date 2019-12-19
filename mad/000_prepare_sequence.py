@@ -8,10 +8,10 @@ sixtrack_input_folder = 'sixtrack'
 mylhcbeam = 1
 on_bb_switch = 1
 
-# mask_fname = "ts_collisions_ats30_en20_IMO380_C7_X160_I1.2_62.3100_60.3200_b4.mask"
-# sixtrack_input_folder = '../sixtrack_b4'
-# mylhcbeam = 4
-# on_bb_switch = 0
+#mask_fname = "ts_collisions_ats30_en20_IMO380_C7_X160_I1.2_62.3100_60.3200_b4.mask"
+#sixtrack_input_folder = '../sixtrack_b4'
+#mylhcbeam = 4
+#on_bb_switch = 0
 
 # os.system("gfortran headonslice.f -o headonslice")
 
