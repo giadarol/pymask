@@ -45,40 +45,41 @@ Nb_0:=cp_beam_npart;
 call, file="myoptics.madx";
 
 ! Beam
+
+gamma_rel := cp_beam_energy_tot / pmass;
+epsx := cp_beam_norm_emit / gamma_rel;
+epsy := cp_beam_norm_emit / gamma_rel;
+
 bv_aux = -1;
 if (mylhcbeam<3){
   beam,particle=proton,sequence=lhcb1,energy=cp_beam_energy_tot,
-      sigt=sigt_col,bv=1,
-      npart=nb_0,sige=1.1e-4,ex=epsx,ey=epsy;
+      sigt=cp_sigt,bv=1,
+      npart=cp_beam_npart,sige=cp_beam_sige,ex=epsx,ey=epsy;
   bv_aux = 1;
 };
-beam,particle=proton,sequence=lhcb2,energy=nrj,sigt=sigt_col,bv=-bv_aux,
-    npart=nb_0,sige=1.1e-4,ex=epsx,ey=epsy;
+beam,particle=proton,sequence=lhcb2,energy=cp_beam_energy_tot,
+    sigt=cp_sigt,bv=-bv_aux,
+    npart=cp_beam_npart,sige=cp_beam_sige,ex=epsx,ey=epsy;
 
+! Tunes
 
+tsplit= cp_qx00;
+qx00  = cp_qy00;
+qy00  = cp_tsplit;
+qx0 = cp_qx0;
+qy0 = cp_qy0;
 
+qprime = cp_chromaticity;
 
-
-
-
-sigt_col=0.075; ! bunch length [m] in collision
-
-gamma_rel      := NRJ/pmass;
-epsx:=emittance_norm /gamma_rel;
-epsy:=emittance_norm /gamma_rel;
 
 !********************************************
 
-tsplit= 2.0;   !new tune split
-qx00  = 62.0;  !integer h tune
-qy00  = 60.0;  !integer v tune
 
 
 if (NRJ<4999.9999){
   !Inj. optics in thin lens
   call,file="slhc/ramp/opt_inj_6000_thin.madx";  ! beta* [m]=6/10/6/10 in IR1/2/5/8
-  qx0 = 62.27;   qy0 = 60.295;  qprime = cp_chromaticity;
-  if (mylhcbeam<3){
+  qx0 = 62.27;   qy0 = 60.295;    if (mylhcbeam<3){
     Beam,particle=proton,sequence=lhcb1,energy=NRJ,sigt=0.130,bv=1,NPART=Nb_0,sige=4.5e-4,ex=epsx,ey=epsy;
   };
   Beam,particle=proton,sequence=lhcb2,energy=NRJ,sigt=0.130,bv=-bv_aux,NPART=Nb_0,sige=4.5e-4,ex=epsx,ey=epsy;

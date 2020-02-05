@@ -30,11 +30,21 @@ cp_oct_current = %OCT%;     ! [A]
 cp_chromaticity = %CHROM%;
 cp_xing_ang_ip15 = %XING;
 
-! Beam paramters
+! Beam parameters
 cp_beam_norm_emit  = %EMIT_BEAM;  ! [m]
-cp_beam_sigt  = 0.075 ! [m]
+cp_beam_sigt  = 0.075; ! [m]
+cp_beam_sige  = 1.1e-4; ! [-]
 cp_beam_npart = %NPART;      ! [-]
 cp_beam_energy_tot = 7000; ! [GeV]
+
+! Integer tunes and tune split
+cp_qx00   = 62.0;  
+cp_qy00   = 60.0;  
+cp_tsplit = 2.0;  
+
+! Tunes with fractional part
+cp_qx0 = 62.31;
+cp_qy0 = 60.32;
 
 !---------------------------------------------------------------;
 !           CALL IN SELECTION, MACRO's, SEQUENCE, BEAM, NRJ and OPTICS FILES;
