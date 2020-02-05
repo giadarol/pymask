@@ -19,7 +19,7 @@ option,-echo,-info;
 !**************************!
 
 ! Define optics
-system,"ln -fns slhc/round/opt_round_150_1500_thin.madx  myoptics.madx";
+system,"ln -fns slhc/round/opt_round_150_1500_thin.madx myoptics.madx";
 
 cp_mylhcbeam = %BEAM%; ! LHC beam 1 (clockwise), LHC beam 2 (clockwise), LHC beam 2 (counterclockwise)
 on_collision = 0;
@@ -46,31 +46,62 @@ cp_tsplit = 2.0;
 cp_qx0 = 62.31;
 cp_qy0 = 60.32;
 
-!---------------------------------------------------------------;
-!           CALL IN SELECTION, MACRO's, SEQUENCE, BEAM, NRJ and OPTICS FILES;
-!---------------------------------------------------------------;
+!IP specific settings 
+cp_on_x1 = cp_xing_ang_ip15;
+cp_on_sep1 = -0.75;  
+cp_on_x5 = cp_xing_ang_ip15;
+cp_on_sep5 = 0.75;  
+cp_on_x2 = 170;
+cp_on_sep2 = 1;
+cp_on_x8 = -200;
+cp_on_sep8 = -1;
+cp_on_a1 = 0;
+cp_on_o1 = 0;           
+cp_on_a5 = 0;
+cp_on_o5 = 0;
+cp_on_a2 = 0;
+cp_on_o2 = 0;
+cp_on_a8 = 0;
+cp_on_o8 = 0;
+cp_on_crab1 = -190;
+cp_on_crab5 = -190;           
 
+cp_on_alice=7000/cp_beam_energy_tot;
+cp_on_lhcb =7000/cp_beam_energy_tot;
 
-! Set this flag if the file is not used as a mask file (sets %SEEDRAN to 1)
-not_a_mask=0;
+cp_on_sol_atlas=0;
+cp_on_sol_cms=  0;
+cp_on_sol_alice=0;
+
+! Dispersion correction knob
+cp_on_disp = 1;
+
+! Second order chrmaticity
+cp_on_qpp =0;  ! Correction of residual Q'' by MO's
+
+!!! Errors and corrections
+
 ! Set this flag to correct the errors of D2 in the NLC (warning: for now only correcting b3 of D2, still in development)
 correct_for_D2=0;
 ! Set this flag to correct the errors of MCBXF in the NLC (warning: this might be less reproducable in reality, use with care)
 correct_for_MCBX=0;
 
-choose_flat_optics=0;
-
 off_all_errors=0;
 
-on_errors_LHC=1;
-on_errors_MBH=1;
-on_errors_Q5=1;
-on_errors_Q4=1;
-on_errors_D2=1;
-on_errors_D1=1;
-on_errors_IT=1;
-on_errors_MCBRD=1;
-on_errors_MCBXF=1;
+cp_on_errors_LHC=1;
+cp_on_errors_MBH=1;
+cp_on_errors_Q5=1;
+cp_on_errors_Q4=1;
+cp_on_errors_D2=1;
+cp_on_errors_D1=1;
+cp_on_errors_IT=1;
+cp_on_errors_MCBRD=1;
+cp_on_errors_MCBXF=1;
+
+!---------------------------------------------------------------;
+!           CALL IN SELECTION, MACRO's, SEQUENCE, BEAM, NRJ and OPTICS FILES;
+!---------------------------------------------------------------;
+
 
 
 

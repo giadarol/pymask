@@ -4,6 +4,16 @@
 
 mylhcbeam = cp_mylhcbeam;
 
+on_errors_LHC = cp_on_errors_LHC;
+on_errors_MBH = cp_on_errors_MBH;
+on_errors_Q5 = cp_on_errors_Q5;
+on_errors_Q4 = cp_on_errors_Q4;
+on_errors_D2 = cp_on_errors_D2;
+on_errors_D1 = cp_on_errors_D1;
+on_errors_IT = cp_on_errors_IT;
+on_errors_MCBRD = cp_on_errors_MCBRD;
+on_errors_MCBXF = cp_on_errors_MCBXF;
+
 call,file="slhc/toolkit/macro.madx";        !Call some macro facilities
 
 Option, -echo,-warn,-info;
@@ -31,8 +41,6 @@ if (mylhcbeam<3){
 seqedit,sequence=lhcb2;flatten;cycle,start=IP3;flatten;endedit;
 
 !********************************************
-!NRJ= 450.0  ; ! injection
-NRJ= 7000.0 ; ! collision
 
 ! A Laundau octupole current 20A inj, -570A col
 I_MO=cp_oct_current;
@@ -61,8 +69,7 @@ beam,particle=proton,sequence=lhcb2,energy=cp_beam_energy_tot,
     sigt=cp_sigt,bv=-bv_aux,
     npart=cp_beam_npart,sige=cp_beam_sige,ex=epsx,ey=epsy;
 
-! Tunes
-
+! Tunes and chromaticity
 tsplit= cp_qx00;
 qx00  = cp_qy00;
 qy00  = cp_tsplit;
@@ -71,36 +78,11 @@ qy0 = cp_qy0;
 
 qprime = cp_chromaticity;
 
+on_qpp = cp_on_qpp; 
 
 !********************************************
 
 
-
-if (NRJ<4999.9999){
-  !Inj. optics in thin lens
-  call,file="slhc/ramp/opt_inj_6000_thin.madx";  ! beta* [m]=6/10/6/10 in IR1/2/5/8
-  qx0 = 62.27;   qy0 = 60.295;    if (mylhcbeam<3){
-    Beam,particle=proton,sequence=lhcb1,energy=NRJ,sigt=0.130,bv=1,NPART=Nb_0,sige=4.5e-4,ex=epsx,ey=epsy;
-  };
-  Beam,particle=proton,sequence=lhcb2,energy=NRJ,sigt=0.130,bv=-bv_aux,NPART=Nb_0,sige=4.5e-4,ex=epsx,ey=epsy;
-};
-
-if (NRJ>5000.0000){
-  if (choose_flat_optics==1) {
-    call,file="slhc/flat/opt_flatvh_75_300_1500_thin.madx";
-  } else {
-    call,file="slhc/round/opt_round_150_1500_thin.madx";
-  };
-  qx0 = 62.31;   qy0 = 60.32;  qprime = cp_chromaticity;
-  ON_QPP     :=0;  ! Correction of residual Q'' by MO's
-  ON_DISP    :=1;  ! Correction of spurious dispersion
-  if (mylhcbeam<3){
-    Beam,particle=proton,sequence=lhcb1,energy=NRJ,sigt=sigt_col,bv=1,
-        NPART=Nb_0,sige=1.1e-4,ex=epsx,ey=epsy;
-  };
-  Beam,particle=proton,sequence=lhcb2,energy=NRJ,sigt=sigt_col,bv=-bv_aux,
-      NPART=Nb_0,sige=1.1e-4,ex=epsx,ey=epsy;
-};
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
 !   Rematch IP1 IP5 phase
@@ -126,53 +108,42 @@ muy_ip15_ref=table(twiss,IP1,muy)-table(twiss,IP5,muy);
 value,mux_ip15_ref,muy_ip15_ref;
 
 
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
-!Set crossing angle and separations knobs
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
+! Set IP knobs
+on_x1 = cp_on_x1 
+on_sep1 cp_on_sep1
+on_x5 = cp_on_x5 
+on_sep5 cp_on_sep5
+on_x2 = cp_on_x2 
+on_sep2 cp_on_sep2
+on_x8 = cp_on_x8
+on_sep8 cp_on_sep8
+on_a1 = cp_on_a1;
+on_o1 = cp_on_o1;           
+on_a5 = cp_on_a5;
+on_o5 = cp_on_o5;
+on_a2 = cp_on_a2;
+on_o2 = cp_on_o2;
+on_a8 = cp_on_a8;
+on_o8 = cp_on_o8;
+on_crab1 = cp_on_crab1;
+on_crab5 = cp_on_crab5;           
 
-!phi_IR1 = 0.000;    phi_IR5 =   90.000;    ! these are automatically set by the optics
+! Set dispersion correction knob
+on_disp = cp_on_disp ;
 
-if (NRJ<4999.9999){
-  if (not_a_mask==1){ xing15=295; } else { xing15=cp_xing_ang_ip15; };
-  on_x1= xing15;      on_sep1=-2;  
-  on_x5= xing15;      on_sep5= 2;  
-  on_x2= 170;         on_sep2= 3.5;
-  on_x8=-170;         on_sep8=-3.5;
-  on_a1=  0;          on_o1= 0;  
-  on_a5=  0;          on_o5= 0;
-  on_a2=-40;          on_o2= 0;          
-  on_a8=-40;          on_o8= 0;
-  on_crab1=0;
-  on_crab5=0;
-  on_disp=0;
-};
-if (NRJ>5000.0000){
-  if (not_a_mask==1){ xing15=250; } else { xing15=cp_xing_ang_ip15; };
-  on_x1= xing15;      on_sep1=-0.75;  
-  on_x5= xing15;      on_sep5= 0.75;  
-  on_x2= 170;         on_sep2= 1;
-  on_x8=-200;         on_sep8=-1;
-  on_a1= 0;           on_o1= 0;           
-  on_a5= 0;           on_o5= 0;
-  on_a2= 0;           on_o2= 0;
-  on_a8= 0;           on_o8= 0;
-  on_crab1=-190;
-  on_crab5=-190;           
-  on_disp=1;
-};
 
 ! spectrometers in experiments
-on_alice=7000/nrj;
-on_lhcb =7000/nrj;
+on_alice = cp_on_alice;
+on_lhcb  = cp_on_lhcb ;
 
 !Avoid crabbing more than the crossing angle
-if ( abs(on_crab1)>abs(xing15) && on_crab1 <> 0) {on_crab1 = abs(on_crab1)/on_crab1 * abs(xing15);}
-if ( abs(on_crab5)>abs(xing15) && on_crab5 <> 0) {on_crab5 = abs(on_crab5)/on_crab5 * abs(xing15);}
+if ( abs(on_crab1)>abs(cp_xing_ang_ip15) && on_crab1 <> 0) {on_crab1 = abs(on_crab1)/on_crab1 * abs(cp_xing_ang_ip15);}
+if ( abs(on_crab5)>abs(cp_xing_ang_ip15) && on_crab5 <> 0) {on_crab5 = abs(on_crab5)/on_crab5 * abs(cp_xing_ang_ip15);}
 
 ! solenoids in experiments
-on_sol_atlas=0;
-on_sol_cms=  0;
-on_sol_alice=0; 
+on_sol_atlas = cp_on_sol_atlas;
+on_sol_cms = cp_on_sol_cms;
+on_sol_alice = cp_on_sol_alice;
 
 exec, print_crossing_knobs;
 exec, crossing_save;
