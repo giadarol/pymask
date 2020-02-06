@@ -4,6 +4,8 @@
 
 mylhcbeam = cp_mylhcbeam;
 
+nrj = cp_beam_energy_tot; 
+
 on_errors_LHC = cp_on_errors_LHC;
 on_errors_MBH = cp_on_errors_MBH;
 on_errors_Q5 = cp_on_errors_Q5;
