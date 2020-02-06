@@ -30,8 +30,9 @@ cp_on_bb_switch = 1;
 
 ! Settings
 cp_oct_current = %OCT%;     ! [A]
-cp_chromaticity = %CHROM%;
-cp_xing_ang_ip15 = %XING;
+cp_chromaticity = %CHROM%; !Q' [-]
+cp_xing_ang_ip15 = %XING; ! [urad]
+cp_vrf_total = 16.; ! [MV]
 
 ! Beam parameters
 cp_beam_norm_emit  = %EMIT_BEAM;  ! [m]
@@ -49,7 +50,7 @@ cp_tsplit = 2.0;
 cp_qx0 = 62.31;
 cp_qy0 = 60.32;
 
-!IP specific settings 
+!IP specific orbit settings 
 cp_on_x1 = cp_xing_ang_ip15;
 cp_on_sep1 = -0.75;  
 cp_on_x5 = cp_xing_ang_ip15;
@@ -69,12 +70,13 @@ cp_on_o8 = 0;
 cp_on_crab1 = -190;
 cp_on_crab5 = -190;           
 
-cp_on_alice=7000/cp_beam_energy_tot;
-cp_on_lhcb =7000/cp_beam_energy_tot;
+! Experiment magnets
+cp_on_alice = 7000/cp_beam_energy_tot;
+cp_on_lhcb = 7000/cp_beam_energy_tot;
 
-cp_on_sol_atlas=0;
-cp_on_sol_cms=  0;
-cp_on_sol_alice=0;
+cp_on_sol_atlas = 0;
+cp_on_sol_cms = 0;
+cp_on_sol_alice = 0;
 
 ! Dispersion correction knob
 cp_on_disp = 1;
@@ -103,7 +105,7 @@ cp_on_errors_MCBXF=1;
 
 ! Select error table (decide if injection or collisions
 cp_myseed = %SEEDRAN;
-system, "ln -fns /wise/collision_errors-emfqcs-%SEEDRAN.tfs error_table.tfs" ;
+system, "ln -fns wise/collision_errors-emfqcs-%SEEDRAN.tfs error_table.tfs" ;
 
 ! Beam-beam configuration
 
@@ -140,47 +142,10 @@ cp_lumi_ip8 = 2e33; ![Hz/cm2]
 call, file="mask_01.mask";
 call, file="mask_02.mask";
 call, file="mask_03.mask";
+call, file="mask_04.mask";
 
+
+system, "mv last_twiss_temp.gz last_twiss.%SEEDRAN.gz";
 stop;
 
 
-
-call, file="slhc/toolkit/get_optics_params.madx";
-
-
-
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!                 final twiss before sending to sixtrack
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-ON_BB_CHARGE:=1;
-
-if (NRJ<4999.9999) {VRF400:=8. ;LAGRF400.B1=0.5;LAGRF400.B2=0.;};
-if (NRJ>5000.0000) {VRF400:=16.;LAGRF400.B1=0.5;LAGRF400.B2=0.;};
-
-
-
-print, text="========================================";
-print, text="======  OPTICS PARAMETERS: FINAL  ======";
-print, text="========================================";
-call, file="slhc/toolkit/get_optics_params.madx";
-
-
-call, file="slhc/toolkit/BetaBeating.madx";
-twiss, chrom;
-!sixtrack,cavall, mult_auto_off,radius=0.017;
-sixtrack,cavall, radius=0.017;
-if( ON_BB_SWITCH == 1){
-  !Fix bb lenses in sixtrack input
-  exec, SIXTRACK_INPUT_BB_LENSES;
-}
-
-select, flag=twiss, clear;
-if (not_a_mask==1){
-  twiss,file="last_twiss.1";
-  System,"gzip -f last_twiss.1";
-} else {
-  twiss,file="last_twiss.%SEEDRAN";
-  System,"gzip -f last_twiss.%SEEDRAN";
-};
-stop;
