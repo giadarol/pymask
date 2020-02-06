@@ -1,3 +1,4 @@
+
 !*********************!
 ! Prepare environment !
 !*********************!
@@ -17,16 +18,15 @@ option,-echo,-info;
 ! Beam-beam macros folder
 system,"ln -fns /afs/cern.ch/eng/lhc/optics/beambeam_macros beambeam_macros"; 
 
-!**************************!
-! Configuration parameters !
-!**************************!
+!***********************!
+! General configuration !
+!***********************!
 
 ! Define optics
 system,"ln -fns slhc/round/opt_round_150_1500_thin.madx myoptics.madx";
 
 cp_mylhcbeam = %BEAM%; ! LHC beam 1 (clockwise), LHC beam 2 (clockwise), LHC beam 2 (counterclockwise)
-cp_on_collision = 1;
-cp_on_bb_switch = 1;
+cp_on_collision = 1; ! If 1 lumi leveling in ip8 is applied and q/q' match is done with bb off 
 
 ! Settings
 cp_oct_current = %OCT%;     ! [A]
@@ -70,6 +70,12 @@ cp_on_o8 = 0;
 cp_on_crab1 = -190;
 cp_on_crab5 = -190;           
 
+! Dispersion correction knob
+cp_on_disp = 1;
+
+! Second order chromaticity
+cp_on_qpp =0;  ! Correction of residual Q'' by MO's
+
 ! Experiment magnets
 cp_on_alice = 7000/cp_beam_energy_tot;
 cp_on_lhcb = 7000/cp_beam_energy_tot;
@@ -78,13 +84,42 @@ cp_on_sol_atlas = 0;
 cp_on_sol_cms = 0;
 cp_on_sol_alice = 0;
 
-! Dispersion correction knob
-cp_on_disp = 1;
 
-! Second order chrmaticity
-cp_on_qpp =0;  ! Correction of residual Q'' by MO's
+!*************************!
+! Beam-beam configuration !
+!*************************!
 
-!!! Errors and corrections
+cp_on_bb_switch = 1;
+
+cp_b_t_dist = 25.;  !bunch separation [ns]
+
+cp_n_inside_D1 = 5;    !default value for the number of additionnal parasitic encounters inside D1
+
+cp_nho_IR1= 11;        ! number of slices for head-on in IR1 (between 0 and 201)
+cp_nho_IR2= 11;        ! number of slices for head-on in IR2 (between 0 and 201)
+cp_nho_IR5= 11;        ! number of slices for head-on in IR5 (between 0 and 201)
+cp_nho_IR8= 11;        ! number of slices for head-on in IR8 (between 0 and 201)
+
+
+!*****************!
+! Leveling in IP8 !
+!*****************!
+
+cp_lumi_ip8 = 2e33; ![Hz/cm2]
+
+cp_nco_IP1 = 2592;
+cp_nco_IP5 = cp_nco_IP1;
+cp_nco_IP2 = 2288;
+cp_nco_IP8 = 2396;
+
+
+!************************!
+! Errors and corrections !
+!************************!
+
+! Select error table (decide if injection or collisions
+cp_myseed = %SEEDRAN;
+system, "ln -fns wise/collision_errors-emfqcs-%SEEDRAN.tfs error_table.tfs" ;
 
 ! Set this flag to correct the errors of D2 in the NLC (warning: for now only correcting b3 of D2, still in development)
 correct_for_D2=0;
@@ -103,49 +138,14 @@ cp_on_errors_IT=1;
 cp_on_errors_MCBRD=1;
 cp_on_errors_MCBXF=1;
 
-! Select error table (decide if injection or collisions
-cp_myseed = %SEEDRAN;
-system, "ln -fns wise/collision_errors-emfqcs-%SEEDRAN.tfs error_table.tfs" ;
 
-! Beam-beam configuration
-
-cp_b_t_dist = 25.;  !bunch separation [ns]
-
-cp_n_inside_D1 = 5;    !default value for the number of additionnal parasitic encounters inside D1
-
-cp_nho_IR1= 11;        ! number of slices for head-on in IR1 (between 0 and 201)
-cp_nho_IR2= 11;        ! number of slices for head-on in IR2 (between 0 and 201)
-cp_nho_IR5= 11;        ! number of slices for head-on in IR5 (between 0 and 201)
-cp_nho_IR8= 11;        ! number of slices for head-on in IR8 (between 0 and 201)
-
-cp_nco_IP1 = 2592;
-cp_nco_IP5 = cp_nco_IP1;
-cp_nco_IP2 = 2288;
-cp_nco_IP8 = 2396;
-
-!Leveling in IP8
-cp_lumi_ip8 = 2e33; ![Hz/cm2]
-
-
-
-
-
-
-
-!---------------------------------------------------------------;
-!           CALL IN SELECTION, MACRO's, SEQUENCE, BEAM, NRJ and OPTICS FILES;
-!---------------------------------------------------------------;
-
-
-
+! Run: !
 
 call, file="mask_01.mask";
 call, file="mask_02.mask";
 call, file="mask_03.mask";
 call, file="mask_04.mask";
 
-
-system, "mv last_twiss_temp.gz last_twiss.%SEEDRAN.gz";
 stop;
 
 
